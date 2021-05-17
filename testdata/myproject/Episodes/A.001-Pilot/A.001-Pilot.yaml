@@ -1,0 +1,30 @@
+# Episode definitions and metadata
+---
+project_unit:
+    - rank: episode
+      code: 001
+      name: Pilot
+      
+      sequences:
+        - ZP
+        - OP
+        - LP
+        # Override alphabetical order for subunits.
+      
+      schema:
+        delimiter: '-'
+        # Go back to the default field separator for things under episode
+        #
+        # So it'll actually parse like this:
+        #
+        # A.001-LP-1-BeginningOfEnd-anim.txt
+        #
+        # (A, 001-LP-1-BeginningOfEnd-anim, txt)
+        # (A, (001, LP, 1, BeginningOfEnd, anim), txt)
+        #
+        # Not sure I'm happy about the filetype being cutoff at the top level
+        #
+
+definitions:
+    render_root: 'Episodes/A.001-Pilot/Renders' # Relative to project_root!
+        

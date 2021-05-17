@@ -1,0 +1,15 @@
+---
+testscalar: loweryaml
+
+testdict:
+    A:
+        - 'item2'
+        - 'item4'
+        
+    B: 2
+    
+    C:
+        a: 1
+        b: 3
+        d: 3
+        e: 4

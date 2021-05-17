@@ -1,0 +1,9 @@
+---
+project_unit:
+    - code: LP
+      rank: sequence
+      name: Last Point
+      description: >
+        Final scene in our exciting production 'My Project' in which the
+        heroes finally get to the end of the metadata.
+      

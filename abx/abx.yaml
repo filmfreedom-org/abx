@@ -1,0 +1,72 @@
+# DEFAULT ABX SETTINGS
+---
+project_schema:
+    - rank: project
+      delimiter: '-'
+      words: True
+      type: string
+      
+    - rank: sequence
+      type:
+        VN: Vague Name
+      
+    - rank: shot
+      type: letter
+      maxlength: 1
+      
+    - rank: element
+      type: string
+      maxlength: 2
+
+render_profiles:
+    previz:
+        name: PreViz,
+        desc: 'GL/AVI Previz Render for Animatics',
+        engine: gl
+        version: any
+        fps: 30
+        fps_div: 1000
+        fps_skip: 1
+        suffix: GL
+        format: AVI_JPEG
+        extension: avi
+        freestyle: False
+        
+    quick:
+        name: 30fps Paint
+        desc: '30fps Simplified Paint-Only Render'
+        engine: bi
+        fps: 30
+        fps_skip: 3
+        suffix: PT
+        format: AVI_JPEG
+        extension: avi
+        freestyle: False,
+        antialias: False,
+        motionblur: False
+            
+    check:
+        name: 1fps Check
+        desc: '1fps Full-Features Check Renders'
+        engine: bi
+        fps: 30
+        fps_skip: 30
+        suffix: CH
+        format: JPEG
+        extension: jpg
+        framedigits: 5
+        freestyle: True
+        antialias: 8
+            
+    full:
+        name: 30fps Full
+        desc: 'Full Render with all Features Turned On',
+        engine: bi
+        fps: 30
+        fps_skip: 1
+        suffix: ''
+        format: PNG
+        extension: png
+        framedigits: 5
+        freestyle: True
+        antialias: 8

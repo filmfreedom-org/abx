@@ -1,0 +1,5 @@
+# Example 'sidecar' file
+---
+project_unit:
+    - rank: block
+      code: 1

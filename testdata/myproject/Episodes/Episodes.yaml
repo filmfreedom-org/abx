@@ -1,0 +1,12 @@
+---
+project_unit:
+    - rank: series
+    
+      code: A
+      name: Series A
+      
+      schema:
+        delimiter: '.'
+        # Kind of a hack to fix the S1E01 notation with a strict delimiter-splitting model
+        # for fields?
+        

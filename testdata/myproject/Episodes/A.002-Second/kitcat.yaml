@@ -1,0 +1,7 @@
+---
+# This is a project root file in the wrong place, it makes everything below it a separate
+# project, which was probably not intended.
+
+project_root:
+    title: "Full Project Under Project"
+ 

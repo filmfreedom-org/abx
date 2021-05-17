@@ -1,0 +1,42 @@
+---
+render_profiles:
+        - previz:
+            engine: gl
+            version: any
+            fps: 30                         # Basic FPS setting
+            fps_div: 1000                   # FPS divisor (for NTSC)
+            fps_skip: 1                     # Frames to skip ("on Ns")            
+            suffix: GL                      # Suffix used on render files            
+            format: AVI_JPEG                # (AVI_JPEG, AVI_PNG, PNG, JPG, MP4...)
+            freestyle: off
+                       
+        - paint:                           # Paint-only renders, full 30fps
+            engine: bi
+            fps: 30
+            fps_skip: 10
+            suffix: PT
+            format: AVI_JPEG
+            freestyle: off
+            antialias: off
+            motionblur: off            
+            
+        - check:                            # Check renders (1 fps, all effects)
+            engine: bi
+            fps: 30
+            fps_skip: 30
+            suffix: CHK
+            format: JPG
+            framedigits: 5                  # No. of digits for frame suffix
+            freestyle: on
+            antialias: 8
+            
+        - full:
+            engine: bi
+            fps: 30
+            fps_skip: 1
+            suffix: off
+            format: PNG
+            framedigits: 5
+            freestyle: on
+            antialias: 8
+ 

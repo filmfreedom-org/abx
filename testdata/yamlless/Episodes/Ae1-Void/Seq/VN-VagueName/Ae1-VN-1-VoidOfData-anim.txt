@@ -1,0 +1,9 @@
+The contents of this file are not used.
+The file_context module only reads the exterior metadata from the filesystem,
+including:
+
+	- file name
+	- file stats (modification dates, permissions, etc)
+	- directory path to the file
+	- "sidecar" data files in YAML format for each level of directory
+	  (these are treated as attributes of the directory they are contained in).

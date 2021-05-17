@@ -1,0 +1,20 @@
+# Anansi Blender Extensions (specific) data file (Overrides generic values as needed)
+---
+abx: True
+
+testscalar: topyaml
+
+testdict:
+    A:
+        - 'item1'
+        - 'item2'
+        - 'item3'
+        
+    B: 1
+    
+    C:
+        a: 1
+        b: 1
+        c: 2
+        d: 3
+            

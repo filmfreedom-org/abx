@@ -1,0 +1,41 @@
+---
+# Project root must exist, but contents aren't really necessary unless
+# we want to have the data available (the value here doesn't even matter,
+# just that 'project_root' exists as a key in this data:
+project_root: True
+
+# By default, the project_root's directory name is the code for the project.
+# Nothing is strictly require of the 'project_unit' item, but it can give
+# us an explicit, longer-form title than the directory name:
+project_unit:
+    - title: Project with Minimal YAML Data
+    
+# Without SOME kind of schema, we can't figure much out, so there HAS
+# to be a project_schema:
+project_schema:
+    - rank: project
+      delimiter: '-'
+      words: True
+      type: string
+      
+    - rank: series
+      delimiter: 'e'
+      type: letter
+      
+    - rank: episode
+      delimiter: '-'
+      type: number
+      maxlength: 1
+      
+    - rank: sequence
+      type:
+        VN: Vague Name
+        
+    - rank: block
+      type: number
+      maxlength: 1
+      
+    - rank: shot
+      type: letter
+      maxlength: 1
+      

@@ -1,0 +1,159 @@
+# Project definitions and metadata
+---
+project_root:
+    # Top level information about the project.
+    owner: "My Production Company"
+    copyright: "(C) My Production Company, LLC"
+    contact: "The Boss <the_boss@my_production_company.com>"
+    url: my_production_company.com
+   
+
+project_unit:
+    # Project unit for the whole project (i.e. top of the DAMS path)
+    # This is expressed as a list, because with UnionList, it will accumulate
+    # project_units down to the filepath, based on any intervening control
+    # files (which should be there in this design, though they can be very
+    # simple).
+    
+    - rank: project
+      # Just explicitly tell the DAMS path level
+      # (avoid need to infer from directory path)
+    
+      code: myproject
+      # Short name used internally for reference (usually same as directory name)
+      # Avoid spaces. Use identifier characters ([A-Za-z_0-9]). Can start with or
+      # be a number, though.
+      
+      name: My Project
+      # Short name used to refer to project (for humans). Can have spacing and punctuation,
+      # but should still be short.
+      # Optional -- use id if not provided.
+
+      title: Project of Mine
+      # Longer name used in headings (optional -- if not provided, name is used).
+      
+      description: >
+          This is a test project used only for testing the ABX and KitCAT file context
+          analysis system.
+    
+      # Descriptive paragraph for documentation and browsing interfaces.
+      # Note the '>': this is how you put block text in YAML.
+
+project_schema:
+    - rank: project
+      delimiter: '-'
+      words: True
+      type: string
+      maxlength: 32
+
+    - rank: series
+      delimiter: '.'
+      type: letter
+        
+    - rank: episode
+      delimiter: '-'
+      type: number
+      maxlength: 3
+      minlength: 3
+      pad: 0
+      format: "{:0>3d}"
+        
+    - rank: sequence
+      type:
+        mt: Main Title
+        et: Episode Title
+        ec: Episode Credits
+        oe: Out Eyecatch
+        ie: In Eyecatch
+        pr: Promotional
+        ad: Sponsor Ad
+        ZP: Zero Point
+        OP: One Point
+        LP: Last Point
+      maxlength: 2
+      minlength: 2
+      pad: '_'
+        
+    - rank: block
+      type: number
+      default: 0
+      maxlength: 1
+      minlength: 1
+      pad: 0
+           
+    - rank: camera
+      type:
+        - 'c1'
+        - 'c2'
+        - 'c3'
+        - 'c4'
+      default: None
+      maxlength: 2
+      minlength: 2
+      
+    - rank: shot
+      type: letter
+      default: A
+      maxlength: 1
+      minlength: 1
+      pad: 0
+      
+    - rank: element
+      type: string
+      default: None
+      maxlength: 5
+      minlength: 0
+           
+                
+definitions:
+    filetypes:
+        blend:    "Blender File"
+        kdenlive: "Kdenlive Video Editor File"
+        mlt:      "Kdenlive Video Mix Script"
+        svg:      "Scalable Vector Graphics (Inkscape)"
+        kra:      "Krita Graphic File"
+        xcf:      "Gimp Graphic File"
+        png:      "Portable Network Graphics (PNG) Image"
+        jpg:      "Joint Photographic Experts Group (JPEG) Image"
+        aup:      "Audacity Project"
+        ardour:   "Ardour Project"
+        flac:     "Free Lossless Audio Codec (FLAC)"
+        mp3:      "MPEG Audio Layer III (MP3) Audio File"
+        ogg:      "Ogg Vorbis Audio File"
+        avi:      "Audio Video Interleave (AVI) Video Container"
+        mkv:      "Matroska Video Container"
+        mp4:      "Moving Picture Experts Group (MPEG) 4 Format"
+        txt:      "Plain Text File"
+        
+    roles:
+        extras:   "Extras, crowds, auxillary animated movement"
+        mech:     "Mechanical animation"
+        anim:     "Character animation"
+        cam:      "Camera direction"
+        vfx:      "Visual special effects"
+        compos:   "Compositing"
+        bkg:      "Background  2D image"
+        bb:       "Billboard 2D image"
+        tex:      "Texture 2D image"
+        foley:    "Foley sound"
+        voice:    "Voice recording"
+        fx:       "Sound effects"
+        music:    "Music track"
+        cue:      "Musical cue"
+        amb:      "Ambient sound"
+        loop:     "Ambient sound loop"
+        edit:     "Video edit"
+        
+    roles_by_filetype:
+        kdenlive: edit
+        mlt: edit
+       
+    omit_ranks:         # Controls how much we shorten names
+        edit:       0   # Use the entire designation for final output
+        render:     1   # Use everything but project name for rendering
+        filename:   1   # Same for filenames in general
+        scene:      3   # Omit project, series, episode for (Blender) scene names
+    
+    
+    
+ 
