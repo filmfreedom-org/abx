@@ -2,7 +2,7 @@
 bl_info = {
     "name": "ABX",
     "author": "Terry Hancock / Lunatics.TV Project / Anansi Spaceworks",
-    "version": (0, 2, 6),
+    "version": (0, 2, 5),
     "blender": (2, 79, 0),
     "location": "SpaceBar Search -> ABX",
     "description": "Anansi Studio Extensions for Blender",
