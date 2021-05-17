@@ -7,8 +7,6 @@ in Blender.
 """
 import subprocess, os
 
-import bpy, bpy.utils
-
 import abx
 
 VERSION_PKG = ('a',)
