@@ -26,7 +26,6 @@ run into.
 import os
 
 import bpy, bpy.utils, bpy.types, bpy.props
-from bpy.app.handlers import persistent
 
 from . import file_context
 
@@ -38,7 +37,7 @@ from . import file_context
 # abx_data = BlendfileContext.abx_data
 
 from . import copy_anim
-from abx import ink_paint
+from . import std_lunatics_ink
 from . import render_profile
 
 
@@ -489,7 +488,7 @@ class lunatics_compositing(bpy.types.Operator):
         """
         scene = context.scene
         
-        shot = ink_paint.LunaticsShot(scene, 
+        shot = std_lunatics_ink.LunaticsShot(scene, 
                 inkthru=context.scene.lx_compos_settings.inkthru,
                 billboards=context.scene.lx_compos_settings.billboards,
                 sepsky=context.scene.lx_compos_settings.sepsky )
@@ -521,13 +520,6 @@ class LunaticsPanel(bpy.types.Panel):
         layout.prop(settings, 'inkthru', text="Ink-Thru")
         layout.prop(settings, 'billboards', text="Billboards")
         layout.prop(settings, 'sepsky', text="Separate Sky")
-        
-        
-BlendFile = file_context.FileContext()
-        
-@persistent
-def update_handler(ctxt):
-    BlendFile.update(bpy.data.filepath)
      
         
 def register():
@@ -550,10 +542,6 @@ def register():
     bpy.types.Scene.lx_compos_settings = bpy.props.PointerProperty(type=lunatics_compositing_settings)
     bpy.utils.register_class(lunatics_compositing)
     bpy.utils.register_class(LunaticsPanel)
-    
-    bpy.app.handlers.save_post.append(update_handler)
-    bpy.app.handlers.load_post.append(update_handler)
-    bpy.app.handlers.scene_update_post.append(update_handler)
     
 def unregister():
     bpy.utils.unregister_class(LunaticsSceneProperties)

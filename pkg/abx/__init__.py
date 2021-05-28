@@ -25,8 +25,6 @@ except ImportError:
 if blender_present:    
     from . import abx_ui
     
-    BlendFile = abx_ui.BlendFile
-    
     def register():
         abx_ui.register()
         #bpy.utils.register_module(__name__)

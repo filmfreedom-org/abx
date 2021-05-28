@@ -6,7 +6,7 @@ Blender Python code to set parameters based on render profiles.
 import bpy
 import bpy, bpy.types, bpy.utils, bpy.props
 
-from abx import ink_paint
+from . import std_lunatics_ink
 
 from . import file_context
 
@@ -195,7 +195,7 @@ class RenderProfile(object):
 #         rdr_fmt = 'PNG'
 #         ext = 'png'
 #
-#     path = ink_paint.LunaticsShot(scene).render_path(
+#     path = std_lunatics_ink.LunaticsShot(scene).render_path(
 #         suffix=suffix, framedigits=framedigits, ext=ext, rdr_fmt=rdr_fmt)
 #
 #     scene.render.filepath = path

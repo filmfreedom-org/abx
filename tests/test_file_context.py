@@ -16,6 +16,51 @@ sys.path.append(os.path.normpath(os.path.join(__file__, '..', '..')))
 
 from abx import file_context
 
+class FileContext_Utilities_Tests(unittest.TestCase):
+    """
+    Test utility functions and classes that FileContext features depend on.
+    """
+    
+    def test_enum_class_basics(self):
+        my_enum = file_context.Enum('ZERO', 'ONE', 'TWO', 'THREE')
+                
+        self.assertEqual(my_enum.number(my_enum.ZERO), 0)
+        self.assertEqual(my_enum.number(0), 0)
+        self.assertEqual(my_enum.number('ZERO'), 0)
+        
+        self.assertEqual(my_enum.name(my_enum.ZERO), 'ZERO')
+        self.assertEqual(my_enum.name(0), 'ZERO')
+        self.assertEqual(my_enum.name('ZERO'), 'ZERO')
+        
+        self.assertEqual(my_enum.ONE, 1)
+        self.assertEqual(my_enum.name(my_enum.TWO), 'TWO')        
+        self.assertEqual(my_enum.name(2), 'TWO')        
+        self.assertEqual(my_enum.number('THREE'), 3)
+        
+    def test_enum_class_blender_enum_options(self):
+        my_options = file_context.Enum(
+            ('ZP', 'ZeroPoint', 'Zero Point'),
+            ('FP', 'FirstPoint', 'First Point'),
+            ('LP', 'LastPoint', 'Last Point'))
+        
+        #print("dir(my_options) = ", dir(my_options))
+        
+        self.assertEqual(my_options.number(my_options.ZP), 0)
+        self.assertEqual(my_options.number(my_options.FP), 1)
+        
+        self.assertEqual(my_options.name(my_options.ZP), 'ZP')
+        self.assertEqual(my_options.name(1), 'FP')
+        self.assertEqual(my_options.name('LP'), 'LP')
+        
+        self.assertEqual(my_options[my_options.number('FP')], 
+            ('FP', 'FirstPoint', 'First Point'))              
+        
+        self.assertListEqual(my_options.options,
+            [('ZP', 'ZeroPoint', 'Zero Point'),
+            ('FP', 'FirstPoint', 'First Point'),
+            ('LP', 'LastPoint', 'Last Point')])
+
+
 class FileContext_NameSchema_Interface_Tests(unittest.TestCase):
     """
     Test the interfaces presented by NameSchema.
@@ -279,6 +324,46 @@ class FileContext_Parser_UnitTests(unittest.TestCase):
              'rank': 'sequence'}
              ) 
         
+    def test_parsing_filenames_w_fallback_parser(self):        
+        abx_fallback_parser = file_context.NameParsers['abx_fallback']()
+        
+        data = abx_fallback_parser('S1E01-SF-4-SoyuzDMInt-cam.blend', None)
+        self.assertDictEqual(data[1],
+            {'filetype': 'blend',
+             'role': 'cam',
+             'comment': None,
+             'title': 'S1E01-SF-4-SoyuzDMInt',
+             'code': 'S1e01Sf4Soyuzdmint'
+            })
+        
+        data = abx_fallback_parser('S1E01-SF-4-SoyuzDMInt-cam~~2021-01.blend', None)
+        self.assertDictEqual(data[1],
+            {'filetype': 'blend',
+             'role': 'cam',
+             'comment': '2021-01',
+             'title': 'S1E01-SF-4-SoyuzDMInt',
+             'code': 'S1e01Sf4Soyuzdmint'
+            })        
+        
+        
+        data = abx_fallback_parser('S1E02-MM-MediaMontage-compos.blend', None)
+        self.assertDictEqual(data[1],
+            {'filetype':'blend',
+             'role':'compos',
+             'comment': None,
+             'title': 'S1E02-MM-MediaMontage',
+             'code': 'S1e02MmMediamontage'
+            })
+        
+        data = abx_fallback_parser('S1E01-PC-PressConference', None)
+        self.assertDictEqual(data[1],
+            {'filetype': None,
+             'role': None,
+             'comment': None,
+             'title': 'S1E01-PC-PressConference',
+             'code': 'S1e01PcPressconference'
+            })
+        
         
 class FileContext_Implementation_UnitTests(unittest.TestCase):
     TESTDATA = os.path.abspath(
@@ -290,6 +375,11 @@ class FileContext_Implementation_UnitTests(unittest.TestCase):
     
     def test_filecontext_finds_and_loads_file(self):
         fc = file_context.FileContext(self.TESTPATH)
+        
+#         print('\ntest_filecontext_finds_and_loads_file')
+#         print(fc.get_log_text('INFO'))
+#         print(dir(self))
+        
         self.assertEqual(fc.filename, 'A.001-LP-1-BeginningOfEnd-anim.txt')
         self.assertEqual(fc.root, os.path.join(self.TESTDATA, 'myproject'))
         self.assertListEqual(fc.folders,
@@ -311,6 +401,15 @@ class FileContext_Implementation_UnitTests(unittest.TestCase):
         self.assertEqual(fc.role, 'anim')
         self.assertEqual(fc.title, 'BeginningOfEnd')
         self.assertEqual(fc.comment, None)
+        
+    def test_filecontext_abx_fields_include_default(self):
+        fc0 = file_context.FileContext()
+        fc1 = file_context.FileContext('')
+        fc2 = file_context.FileContext(self.TESTPATH)
+        
+        for fc in (fc0, fc1, fc2):
+            self.assertIn('render_profiles', fc.abx_fields)
+            
                 
             
 class FileContext_API_UnitTests(unittest.TestCase):
@@ -416,21 +515,36 @@ class FileContext_FailOver_Tests(unittest.TestCase):
         'yaminimal', 'Episodes', 'Ae1-Void', 'Seq', 'VN-VagueName',
         'Ae1-VN-1-VoidOfData-anim.txt')
     
+    def test_filecontext_finds_default_yaml(self):
+        self.assertIn('abx_default', file_context.DEFAULT_YAML)
+    
     def test_filecontext_no_project_path(self):
         fc = file_context.FileContext()
+        self.assertFalse(fc.file_exists)
+        self.assertFalse(fc.folder_exists)
+        self.assertIn('abx_default', fc.provided_data)
         # What to test?
         # The main thing is that it doesn't crash.
     
     def test_filecontext_failover_empty_project(self):
         fc = file_context.FileContext(self.TEST_EMPTY_PROJECT)
+        self.assertFalse(fc.file_exists)
+        self.assertTrue(fc.folder_exists)
+        self.assertIn('abx_default', fc.provided_data)
         
     def test_filecontext_failover_nonexisting_file(self):
         fc = file_context.FileContext(self.TEST_NONEXISTENT_PATH)
+        self.assertFalse(fc.file_exists)
+        self.assertFalse(fc.folder_exists)
+        self.assertIn('abx_default', fc.provided_data)
         
     def test_filecontext_failover_no_yaml(self):
         fc = file_context.FileContext(self.TEST_NO_YAML)
+        self.assertIn('abx_default', fc.provided_data)
+        # It finds the backstop root YAML in the testdata:
+        self.assertEqual(fc.root, self.TESTDATA)
         
     def test_filecontext_failover_minimal_yaml(self):
         fc = file_context.FileContext(self.TEST_MINIMAL_YAML)
-        
+        self.assertIn('abx_default', fc.provided_data)
         
