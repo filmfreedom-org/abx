@@ -1042,7 +1042,7 @@ class FileContext(NameContext):
             self.namepath_segment = [d['code'] for d in self.provided_data['project_unit']]
             self.code = self.namepath[-1]
         except:
-            print("Errors finding Name Path (is there a 'project_schema' or 'project_unit' defined?")
+            print("Can't find Name Path. Missing <project>.yaml file?")
             pass
             # print("\n(899) filename = ", self.filename)
             # if 'project_schema' in self.provided_data:

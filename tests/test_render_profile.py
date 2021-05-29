@@ -16,11 +16,6 @@ import sys
 print("__file__ = ", __file__)
 sys.path.append(os.path.normpath(os.path.join(__file__, '..', '..')))
 
-TESTDATA = os.path.join(os.path.abspath(__file__), '..', 'testdata')
-
-TESTPATH = os.path.join(TESTDATA, 'myproject', 'Episodes', 'A.001-Pilot',
-                        'Seq', 'LP-LastPoint', 'A.001-LP-1-BeginningOfEnd-anim.txt') 
-
 import bpy
 
 import abx
