@@ -21,6 +21,16 @@ import yaml
 def EnumFromList(schema, listname):
     return [(e, e.capitalize(), e.capitalize()) for e in schema[listname]]
 
+def ExpandEnumList(schema, options):
+    blender_options = []
+    for option in options:
+        if type(option) is str:
+            blender_options.append((option, option, option))
+        elif isinstance(option, tuple) or isinstance(option, list):
+            option = tuple(option[0:3] + ([option[-1]]*(3-len(option))))
+            blender_options.append(option)
+    return blender_options
+
 class PropertyGroupFactory(bpy.types.PropertyGroup):
     """
     Metadata property group factory for attachment to Blender object types.
@@ -33,31 +43,32 @@ class PropertyGroupFactory(bpy.types.PropertyGroup):
             'keywords': { 'name', 'description', 'default', 'maxlen', 
                           'options', 'subtype'},
             'translate': {
-                'desc': ('description', None)}},
+                'desc': (None, 'description', None)}},
         'enum': {
             'property': bpy.props.EnumProperty,
             'keywords': { 'items', 'name', 'description', 'default', 'options'},
             'translate': {
-                'desc': ('description', None),
-                'items_from': ('items', EnumFromList)}},
+                'desc': (None, 'description', None),
+                'items_from': (EnumFromList, 'items'),
+                'items': (ExpandEnumList, 'items')}},
         'int': {
             'property': bpy.props.IntProperty,
             'keywords': { 'name', 'description', 'default', 'min', 'max',
                           'soft_min', 'soft_max', 'step', 'options', 'subtype'},
             'translate': {
-                'desc': ('description', None)}},
+                'desc': (None, 'description')}},
         'float': {
             'property': bpy.props.FloatProperty,
             'keywords': { 'name', 'description', 'default', 'min', 'max',
                           'soft_min', 'soft_max', 'step', 'options', 
                           'subtype', 'precision', 'unit'},
             'translate': {
-                'desc': ('description', None)}},
+                'desc': (None, 'description')}},
         'bool': {
             'property': bpy.props.BoolProperty,
             'keywords': { 'name', 'description', 'default', 'options', 'subtype'},
             'translate': {
-                'desc': ('description', None)}}
+                'desc': (None, 'description')}}
         }
     
     def __new__(cls, name, schema):  
@@ -74,13 +85,13 @@ class PropertyGroupFactory(bpy.types.PropertyGroup):
             filtered = {}
             for param in definition:   
                 if 'translate' in propmap and param in propmap['translate']:
-                    translator = propmap['translate'][param][1]
+                    translator = propmap['translate'][param][0]
                     if callable(translator):
-                        # Filtered translation
-                        filtered[propmap['translate'][param][0]] = translator(schema, definition[param])
+                        # Filtered translation                        
+                        filtered[propmap['translate'][param][1]] = translator(schema, definition[param])
                     else:
                         # Simple translation
-                        filtered[propmap['translate'][param][0]] = definition[param]
+                        filtered[propmap['translate'][param][1]] = definition[param]
                 else:
                     filtered[param] = definition[param]
                         

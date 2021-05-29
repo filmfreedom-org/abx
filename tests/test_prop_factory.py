@@ -75,6 +75,25 @@ class TestPropertyGroupFactory(unittest.TestCase):
               default: 'unknown'
               desc: An enumerated property using a list reference.
               
+            - code: enum_prop2
+              name: MyEnum2
+              type: enum
+              items:
+                  - op1
+                  - op2
+                  - op3
+              default: op1
+              desc: An enumerated property using a direct list of strings.
+              
+            - code: enum_prop3
+              name: MyEnum3
+              items:
+                  - op1
+                  - ('op2', 'Option2')
+                  - ('op3', 'Option3', 'Option Three')
+              default: op1
+              desc: An enumerated property using direct list with mixed types.
+              
         enum1_list:
             - unknown
             - option1
@@ -103,47 +122,35 @@ class TestPropertyGroupFactory(unittest.TestCase):
             bpy.context.scene.my_custom_property_group.prop1, 
             'default')
         
-    def test_creating_complex_sampler(self):
+    def test_creating_and_attaching_complex_sampler(self):
         schema = yaml.safe_load(io.StringIO(self.SAMPLER))
         sampler = prop_factory.PropertyGroupFactory(
             'sampler', schema)
         bpy.types.Scene.sampler = bpy.props.PointerProperty(type=sampler)
         
-        self.assertEqual(
-            bpy.context.scene.sampler.str_prop, 'str_prop')
-        
-        self.assertEqual(
-            bpy.context.scene.sampler.int_prop, 1)
-        
-        self.assertEqual(
-            bpy.context.scene.sampler.float_prop, 1.0)
-        
-        self.assertEqual(
-            bpy.context.scene.sampler.bool_prop, False)
-        
-        self.assertEqual(
-            bpy.context.scene.sampler.enum_prop1, 'unknown')
+        self.assertEqual(bpy.context.scene.sampler.str_prop, 'str_prop')
+        self.assertEqual(bpy.context.scene.sampler.int_prop, 1)
+        self.assertEqual(bpy.context.scene.sampler.float_prop, 1.0)
+        self.assertEqual(bpy.context.scene.sampler.bool_prop, False)
+        self.assertEqual(bpy.context.scene.sampler.enum_prop1, 'unknown')
+        self.assertEqual(bpy.context.scene.sampler.enum_prop2, 'op1')
+        self.assertEqual(bpy.context.scene.sampler.enum_prop3, 'op1')
         
         bpy.context.scene.sampler.str_prop = 'my string'
         bpy.context.scene.sampler.int_prop = 2
         bpy.context.scene.sampler.float_prop = 0.7
         bpy.context.scene.sampler.bool_prop = True
         bpy.context.scene.sampler.enum_prop1 = 'option1'
+        bpy.context.scene.sampler.enum_prop2 = 'op2'
+        bpy.context.scene.sampler.enum_prop3 = 'op3'
         
-        self.assertEqual(
-            bpy.context.scene.sampler.str_prop, 'my string')
-        
-        self.assertEqual(
-            bpy.context.scene.sampler.int_prop, 2)
-        
-        self.assertAlmostEqual(
-            bpy.context.scene.sampler.float_prop, 0.7)
-        
-        self.assertEqual(
-            bpy.context.scene.sampler.bool_prop, True)
-        
-        self.assertEqual(
-            bpy.context.scene.sampler.enum_prop1, 'option1')
+        self.assertEqual(bpy.context.scene.sampler.str_prop, 'my string')
+        self.assertEqual(bpy.context.scene.sampler.int_prop, 2)
+        self.assertAlmostEqual(bpy.context.scene.sampler.float_prop, 0.7)
+        self.assertEqual(bpy.context.scene.sampler.bool_prop, True)
+        self.assertEqual(bpy.context.scene.sampler.enum_prop1, 'option1')
+        self.assertEqual(bpy.context.scene.sampler.enum_prop2, 'op2')
+        self.assertEqual(bpy.context.scene.sampler.enum_prop3, 'op3')
         
         
         
