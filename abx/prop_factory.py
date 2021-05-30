@@ -19,9 +19,30 @@ from .accumulate import UnionList, RecursiveDict
 import yaml
 
 def EnumFromList(schema, listname):
+    """
+    Convert options from a list of strings referenced by key name.
+    
+    Args:
+        schema (dict): definition of the property group containing the enum.
+        options (list): list of options as simple strings.
+    
+    Returns:
+        List of options as tuples, as needed by Blender.
+    """
     return [(e, e.capitalize(), e.capitalize()) for e in schema[listname]]
 
 def ExpandEnumList(schema, options):
+    """
+    Convert options from a direct list.
+    
+    Args:
+        schema (dict): definition of the property group containing the enum.
+        options (list): list of options. Individual options can be strings,
+            pairs, or triples.
+            
+    Returns:
+        A list of triples defining the enumerated values as needed for Blender.
+    """
     blender_options = []
     for option in options:
         if type(option) is str:
@@ -33,8 +54,13 @@ def ExpandEnumList(schema, options):
 
 class PropertyGroupFactory(bpy.types.PropertyGroup):
     """
-    Metadata property group factory for attachment to Blender object types.
-    Definitions come from a YAML source (or default defined below).
+    Property group factory for attachment to Blender object types.
+    
+    Structure of the property group returned is determined by a dictionary
+    schema, which may be loaded from a YAML file.
+    
+    This is a "class factory", a class which returns another class when
+    called.
     """
     # These values mirror the Blender documentation for the bpy.props types:
     prop_types = {

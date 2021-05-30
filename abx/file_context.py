@@ -72,7 +72,14 @@ from .accumulate import RecursiveDict
 wordre = re.compile(r'([A-Z][a-z]+|[a-z]+|[0-9]+|[A-Z][A-Z]+)')
 
 class Enum(dict):
-    def __init__(self, *options):        
+    """
+    List of options defined in a two-way dictionary.
+    """
+    def __init__(self, *options):
+        """
+        Args:
+            *options (list): a list of strings to be used as enumerated values.
+        """       
         for i, option in enumerate(options):
             if isinstance(option, list) or isinstance(option, tuple):
                 name = option[0]
@@ -87,8 +94,11 @@ class Enum(dict):
     @property
     def options(self):
         """
-        This gives the options in a Blender-friendly format, with
-        tuples of three strings for initializing bpy.props.Enum().
+        Gives the options in a Blender-friendly format.
+        
+        Returns:
+            A list of triples containing the three required fields for 
+            Blender's bpy.props.EnumProperty.
         
         If the Enum was initialized with strings, the options will
         contain the same string three times. If initialized with
@@ -99,6 +109,15 @@ class Enum(dict):
         return [self[i] for i in number_keys]
     
     def name(self, n):
+        """
+        Return the name (str) value of enum, regardless of which is provided.
+        
+        Args:
+            n (str, int): An enum value (either number or string).
+            
+        Returns:
+            Returns a string if n is recognized. Returns None if not.
+        """
         if type(n) is int:
             return self[n][0]
         elif type(n) is str:
@@ -107,6 +126,15 @@ class Enum(dict):
             return None
     
     def number(self, n):
+        """
+        Return the number (int) value of enum, regardless of which is provided.
+        
+        Args:
+            n (str, int): An enum value (either number or string).
+            
+        Returns:
+            Returns a number if n is recognized. Returns None if not.
+        """
         if type(n) is str:
             return self[n]
         elif type(n) is int:
@@ -304,7 +332,9 @@ class Parser_ABX_Episode:
 @registered_parser
 class Parser_ABX_Schema(object):
     """
-    Parser based on using the project_schema defined in the project root directory YAML.
+    Parser based on using the list of schemas.
+    
+    The schemas are normally defined in the project root directory YAML.
     """
     name = 'abx_schema'
     
@@ -449,8 +479,9 @@ class Parser_ABX_Schema(object):
 @registered_parser
 class Parser_ABX_Fallback(object):
     """
-    Highly-tolerant parser to fall back to if the others fail
-    or can't be used.
+    Highly-tolerant parser to fall back to if others fail.
+    
+    Makes very minimal assumptions about filename structure.
     """
     name = 'abx_fallback'
     
@@ -519,11 +550,87 @@ class Parser_ABX_Fallback(object):
         
     
 class RankNotFound(LookupError):
+    """
+    Error returned if an unexpected 'rank' is encountered.
+    """
     pass
     
 class NameSchema(object):
     """
-    Represents a schema used for parsing and constructing designations, names, etc.
+    Represents a schema used for parsing and constructing names.
+    
+    We need naming information in various formats, based on knowledge about
+    the role of the Blender file and scene in the project. This object tracks
+    this information and returns correct names based on it via properties.
+    
+    Note that NameSchema is NOT an individual project unit name, but a defined
+    pattern for how names are treat at that level in the project. It is a class
+    of names, not a name itself. Thus "shot" has a schema, but is distinct from
+    "shot A" which is a particular "project unit". The job of the schema is
+    to tell us things like "shots in this project will be represented by
+    single capital letters".
+    
+    See NameContext for the characteristics of a particular unit.
+    
+    Attributes:
+        codetype (type):    Type of code name used for this rank.
+                            Usually it will be int, str, or Enum.
+                            Pre-defined enumerations are available
+                            for uppercase letters (_letters) and
+                            lowercase letters (_lowercase) (Roman --
+                            in principle, other alphabets could be added).
+        
+        rank (int):         Rank of hierarchy under project (which is 0). The
+                            rank value increases as you go "down" the tree.
+                            Sorry about that confusion.
+        
+        ranks (list(Enum)): List of named ranks known to schema (may include
+                            both higher and lower ranks).
+                            
+        parent (NameSchema|None):
+                            Earlier rank to which this schema is attached.
+        
+        format (str):       Code for formatting with Python str.format() method.
+                            Optional: format can also be specified with the
+                            following settings, or left to default formatting.
+        
+        pad (str):          Padding character.
+        minlength (int):    Minimum character length (0 means it may be empty).
+        maxlength (int):    Maximum character length (0 means no limit).
+        
+        words (bool):       Treat name/title fields like a collection of words,
+                            which can then be represented using "TitleCaps" or
+                            "underscore_spacing", etc for identifier use.
+                            
+        delimiter (str):    Field delimiter marking the end of this ranks'
+                            code in designations. Note this is the delimiter
+                            after this rank - the higher (lower value) rank
+                            controls the delimiter used before it.
+                            
+        default:            The default value for this rank. May be None, 
+                            in which case, the rank will be treated as unset
+                            until a setting is made. The UI must provide a
+                            means to restore the unset value. Having no values
+                            set below a certain rank is how a NameContext's
+                            rank is determined.
+                            
+        Note that the rank may go back to a lower value than the schema's
+        parent object in order to overwrite earlier schemas (for overriding a
+        particular branch in the project) or (compare this to the use of '..'
+        in operating system paths). Or it may skip a rank, indicating an
+        implied intermediate value, which will be treated as having a fixed
+        value.  (I'm not certain I want that, but it would allow us to keep
+        rank numbers synchronized better in parallel hierarchies in a project).
+        
+        Note that schemas can be overridden at any level in a project by 
+        'project_schema' directives in unit YAML files, so it is possible to
+        change the schema behavior locally. By design, only lower levels in
+        the hierarchy (higher values of rank) can be affected by overrides.
+        
+        This kind of use isn't fully developed yet, but the plan is to include
+        things like managing 'Library' assets with a very different structure
+        from shot files. This way, the project can split into 'Library' and
+        'Episode' forks with completely different schemas for each.
     """
     # Defaults
     _default_schema = {
@@ -543,6 +650,8 @@ class NameSchema(object):
                   'block', 'camera', 'shot', 'element')
         }
     
+    # Really this is more like a set than a dictionary right now, but I
+    # thought I might refactor to move the definitions into the dictionary:
     _codetypes = {
         'number':{}, 
         'string':{},
@@ -560,6 +669,33 @@ class NameSchema(object):
     ranks = ('project',)
     
     def __init__(self, parent=None, rank=None, schema=None, debug=False):
+        """
+        Create a NameSchema from schema data source.
+        
+        NameSchema is typically initialized based on data from YAML files
+        within the project. This allows us to avoid encoding project structure
+        into ABX, leaving how units are named up to the production designer.
+        
+        If you want our suggestions, you can look at the "Lunatics!" project's
+        'lunatics.yaml' file, or the 'myproject.yaml' file in the ABX source
+        distribution.
+        
+        Arguments:
+            parent (NameSchema):    
+                           The level in the schema hierarchy above this one.
+                           Should be None if this is the top.
+                            
+            rank (int):    The rank of this schema to be created.
+            
+            schema (dict): Data defining the schema, typically loaded from a
+                           YAML file in the project.
+                           
+            debug (bool):  Used only for testing. Turns on some verbose output
+                           about internal implementation.
+        
+        Note that the 'rank' is specified because it may NOT be sequential from
+        the parent schema. 
+        """
         # Three types of schema data:
         
         # Make sure schema is a copy -- no side effects!
@@ -680,10 +816,8 @@ class NameSchema(object):
                     option = (str(key), str(val), str(val))
                 self.codetype.append(option)
         else:
-            # If all else fails, just list the string
+            # If all else fails
             self.codetype = None
-            
-
         
     def __repr__(self):
         return('<(%s).NameSchema: %s (%s, %s, %s, (%s))>' % (
@@ -700,6 +834,90 @@ class NameSchema(object):
 class NameContext(object):
     """
     Single naming context within the file (e.g. a Blender scene).
+    
+    NameContext defines the characteristics of any particular project
+    unit (taxon) within the project. So, for example, it may represent
+    the context of an "Episode" or a "Sequence" or a "Shot".
+    
+    Used in Blender, it will typically be used in two ways: one to represent
+    the entire file (as the base class for FileContext) and one to represent
+    a particular Blender scene within the file, which may represent a single
+    shot, multiple shots with the same camera, or perhaps just an element
+    of a compositing shot created from multiple Blender scenes.
+    
+    Examples of all three uses occur in "Lunatics!" episode 1: the
+    "Press Conference" uses multicam workflow, with scenes for each camera
+    with multiple shots selected from the timeline, using the VSE; most scenes
+    are done 'single camera' on a shot-per-scene basis; but some shots use a
+    'Freestyle camera clipping' technique which puts the line render in a
+    separate (but linked) scene, while the final shot in the episode combines
+    three different Blender scenes in a 2D composite, to effect a smooth
+    transition to the titles.
+    
+    Attributes:
+        container (NameContext):
+                        The project unit that contains this one. One step
+                        up the tree, but not necessarily the next step up
+                        in rank (because there can be skipped ranks).
+                        
+        schemas (list(NameSchema)):
+                        The schema list as seen by this unit, taking into
+                        account any schema overrides.
+                        
+        namepath_segment (list):
+                        List of namepath codes defined in this object, not
+                        including the container's namepath. (Implementation)
+                        
+        omit_ranks dict(str:int):
+                        How many ranks to omit from the beginning in shortened
+                        names for specific uses. (Implementation).
+                        Probably a mistake this isn't in the NameSchema instead.
+                        
+        fields (dict):  The field values used to initialize the NameContext,
+                        May include some details not defined in this attribution
+                        API, and it includes the raw state of the 'name', 'code',
+                        and 'title' fields, determining which are
+                        authoritative -- i.e. fields which aren't specified are
+                        left to 'float', being generated by the related ones.
+                        Thus, name implies title, or title implies name. You
+                        can have one or the other or both, but the other will be
+                        generated from the provided one if it isn't specified.
+                        (Implementation).
+                        
+        code (str|int|Enum):
+                        Identification code for the unit (I replaced 'id' in earlier
+                        versions, because 'id' is a reserved word in Python for Python
+                        memory reference / pointer identity.
+                        (R/W Property).
+        
+        namepath (list):
+                        List of codes for project units above this one.
+                        (R/O Property, generated from namepath_segment and
+                        container).
+        
+        rank (int):     Rank of this unit (same as in Schema).
+                        (R/W Property, may affect other attributes).
+                        
+        name (str):     Short name for the unit.
+                        (R/W Property, may affect title).
+                        
+        title (str):    Full title for the unit.
+                        (R/W Property, may affect name).
+                        
+        designation (str):
+                        Full designation for the unit, including all
+                        the namepath elements, but no title.
+                        
+        fullname (str): The full designation, plus the current unit name.
+        
+        shortname (str):Abbreviated designation, according to omit_ranks,
+                        with name.
+                        
+
+                        
+    
+        
+    
     """
     
     def __init__(self, container, fields=None, namepath_segment=(), ):
@@ -887,6 +1105,13 @@ class NameContext(object):
                         self._compress_name(self.name))
     
     def get_scene_name(self, suffix=''):
+        """
+        Create a name for the current scene, based on namepath.
+        
+        Arguments:
+            suffix (str):   Optional suffix code used to improve
+                            identifications of scenes.
+        """
         namebase = self.omit_ranks['scene']*2
         desig = ''.join(self._get_name_components()[namebase:])     
         
@@ -896,7 +1121,23 @@ class NameContext(object):
             return desig
         
     def get_render_path(self, suffix='', framedigits=5, ext='png'):
+        """
+        Create a render filepath, based on namepath and parameters.
         
+        Arguments:
+            suffix (str):
+                Optional unique code (usually for render profile).
+            
+            framedigits (int):
+                How many digits to reserve for frame number.
+                
+            ext (str):
+                Filetype extension for the render.
+                
+        This is meant to be called by render_profile to combine namepath
+        based name with parameters for the specific render, to uniquely
+        idenfify movie or image-stream output.
+        """        
         desig = ''.join(self._get_name_components()[self.omit_ranks['render']+1:])
         
         if ext in ('avi', 'mov', 'mp4', 'mkv'):
@@ -921,12 +1162,138 @@ class NameContext(object):
             
 class FileContext(NameContext):
     """
-    Collected information about an object's location on disk: metadata
-    about filename, directory names, and project, based on expected keywords.
+    Collected information about a file's storage location on disk.
+    
+    Collects name and path information from a filepath, used to identify
+    the file's role in a project. In order to do this correctly, the
+    FileContext object needs a schema defined for the project, which
+    explains how to read and parse project file names, to determine what
+    unit, name, or role they might have in the project.
+    
+    For this, you will need to have a <project>.yaml file which defines
+    the 'project_schema' (a list of dictionaries used to initialize a list
+    of NameSchema objects). Examples of <project>.yaml are provided in the
+    'myproject.yaml' file in the test data in the source distribution of
+    ABX, and you can also see a "live" example in the "Lunatics!" project.
+    
+    Subclass from NameContext, so please read more information there.
+    
+    Attributes:
+        root (filepath):
+            The root directory of the project as an absolute operating system
+            filepath. This should be used for finding the root where it is
+            currently, not stored for permanent use, as it will be wrong if
+            the project is relocated.
+            
+        render_root (filepath):
+            The root directory for rendering. We often have this symlinked to
+            a large drive to avoid congestion. Usually just <root>/Renders.
+            
+        filetype (str):
+            Filetype code or extension for this file. Usually identifies what
+            sort of file it is and may imply how it is used in some cases.
+            
+        role (str):
+            Explicit definition of file's role in the project, according to
+            roles specified in <project>.yaml. For a default, see 'abx.yaml'
+            in the ABX source code. Derived from the file name.
+            
+        title (str):
+            Title derived from the filename.
+            The relationship between this and the NameContext title is unclear
+            at present -- probably we should be setting the NameContext.title
+            property from here (?)
+            
+        comment (str):
+            Comment field from the filename. This is a free field generally
+            occurring after the role, using a special delimiter and meant to
+            be readable by humans. It may indicate an informal backup or
+            saved version of the file outside of the VCS, as opposed to
+            a main, VCS-tracked copy. Or it may indicate some variant version
+            of the file.
+            
+        name_contexts (list[NameContext]):
+            A list of NameContext objects contained in this file, typically
+            one-per-scene in a Blender file.
+            
+        filepath (str):
+            O/S and location dependent absolute path to the file.
+            
+        filename (str):
+            Unaltered filename from disk.
+            
+        file_exists (bool):
+            Does the file exist on disk (yet)?
+            This may be false if the filename has been determined inside
+            the application, but the file has not been written to disk yet.
+        
+        folder_exists (bool):
+            Does the containing folder exist (yet)?
+            
+        folders (list(str)):
+            List of folder names from the project root to the current file,
+            forming a relative path from the root to this file.
+        
+        omit_ranks (dict[str:int]):
+            How many ranks are omitted from the beginning of filename
+            fields? (Implementation).
+            
+        provided_data (RecursiveDict):
+            The pile of data from project YAML files. This is a special
+            dictionary object that does "deep updates" in which sub-dictionaries
+            and sub-lists are updated recursively rather than simply being
+            replaced at the top level. This allows the provided_data to
+            accumulate information as it looks up the project tree to the
+            project root. It is not recommended to directly access this data.
+            (Implementation)
+            
+        abx_fields (RecursiveDict):
+            A pile of 'abx.yaml' file with directives affecting how ABX should
+            behave with this file. This can be used to set custom behavior in
+            different project units. For example, we use it to define different
+            render profiles for different project units.
+        
+        notes (list(str)):
+            A primitive logging facility. This stores warning and information
+            messages about the discovery process to aid the production designer
+            in setting up the project correctly.
+            NOTE that the clear method does not clear the notes! There is a
+            separate clear_notes() method.
+            
+        parsers (list):
+            A list of registered parser implementations for analyzing file
+            names. FileContext tries them all, and picks the parser which
+            reports the best score -- that is, parser score themselves on
+            how likely their parse is to be correct. So if a parser hits a
+            problem, it demerits its score, allowing another parser to take
+            over.
+            
+            Currently there are only three parsers provided: a custom one,
+            originally written to be specific to "Lunatics!" episodes
+            ('abx_episode', now obsolete?), a parser using the project_schema
+            system ('abx_schema', now the preferred choice), and a "dumb"
+            parser design to fallback on if no schema is provided, which reads
+            only the filetype and possible role, title, and comment fields,
+            guessing from common usage with no explicit schema
+            ('abx_fallback').
+    
+    This implementation could probably benefit from some more application of
+    computer science and artificial intelligence, but I've settled on a
+    "good enough" solution and the assumption that production designers would
+    probably rather just learn how to use the YAML schemas correctly, than
+    to try to second-guess a sloppy AI system.
+    
+    As of v0.2.6, FileContext does NOT support getting any information
+    directly from the operating system path for the file (i.e. by reading
+    directory names), although this would seem to be a good idea.
+    
+    Therefore, project units have to be specified by additional unit-level
+    YAML documents (these can be quite small), explicitly setting the
+    unit-level information for directories above the current object, and
+    by inference from the project schema and the filename (which on "Lunatics!"
+    conveys all the necessary information for shot files, but perhaps not
+    for library asset files).
     """
-#     hierarchies = ()
-#     hierarchy = None
-    #schema = None
     
     # IMMUTABLE DEFAULTS:
     filepath = None
@@ -959,6 +1326,12 @@ class FileContext(NameContext):
             self.update(path)
 
     def clear(self):
+        """
+        Clear the contents of the FileContext object.
+        
+        Nearly the same as reinitializing, but the notes
+        attribute is left alone, to preserve the log history.
+        """
         NameContext.clear(self)
                 
         # Identity
@@ -989,11 +1362,17 @@ class FileContext(NameContext):
         self.abx_fields = DEFAULT_YAML['abx']
                      
     def clear_notes(self):
+        """
+        Clear the log history in the notes attribute.
+        """
         # We use this for logging, so it doesn't get cleared by the
         # normal clear process.
         self.notes = []
             
     def update(self, path):
+        """
+        Update the FileContext based on a new file path.
+        """
         # Basic File Path Info
         self.filepath = os.path.abspath(path)
         self.filename = os.path.basename(path)
@@ -1107,11 +1486,20 @@ class FileContext(NameContext):
         return s
     
     def log(self, level, msg):
+        """
+        Log a message to the notes attribute.
+        
+        This is a simple facility for tracking issues with the production
+        source tree layout, schemas, and file contexts.
+        """
         if type(level) is str:
             level = log_level.index(level)
         self.notes.append((level, msg))
         
     def get_log_text(self, level=log_level.INFO):
+        """
+        Returns the notes attribute as a block of text.
+        """
         level = log_level.number(level)
         return '\n'.join([
                     ': '.join((log_level.name(note[0]), note[1])) 
@@ -1148,6 +1536,9 @@ class FileContext(NameContext):
 
     @property
     def filetype(self):
+        """
+        Filetype suffix for the file (usually identifies format).
+        """
         if 'filetype' in self.fields:
             return self.fields['filetype']
         else:
@@ -1159,6 +1550,9 @@ class FileContext(NameContext):
         
     @property
     def role(self):
+        """
+        Role field from the filename, or guessed from filetype.
+        """
         if 'role' in self.fields:
             return self.fields['role']
         else:
@@ -1170,6 +1564,9 @@ class FileContext(NameContext):
         
     @property
     def title(self):
+        """
+        Title field parsed from the file name.
+        """
         if 'title' in self.fields:
             return self.fields['title']
         else:
@@ -1181,6 +1578,12 @@ class FileContext(NameContext):
         
     @property
     def comment(self):
+        """
+        Comment field parsed from the filename.
+        
+        Meant to be a human-readable extension to the filename, often used to
+        represent an informal version, date, or variation on the file.
+        """
         if 'comment' in self.fields:        
             return self.fields['comment']
         else:
@@ -1192,6 +1595,9 @@ class FileContext(NameContext):
         
     @classmethod    
     def deref_implications(cls, values, matchfields):
+        """
+        NOT USED: Interpret information from reading folder names.
+        """
         subvalues = {}
         for key in values:
             # TODO: is it safe to use type tests here instead of duck tests?
@@ -1206,6 +1612,9 @@ class FileContext(NameContext):
         return subvalues        
     
     def get_path_implications(self, path):
+        """
+        NOT USED: Extract information from folder names.
+        """
         data = {}
         prefix = r'(?:.*/)?'
         suffix = r'(?:/.*)?'
@@ -1217,9 +1626,10 @@ class FileContext(NameContext):
     
     def new_name_context(self, rank=None, **kwargs):
         """
-        Get a subunit from the current file.
-        Any rank in the hierarchy may be specified, though element, shot,
-        camera, and block are most likely.
+        Get a NameContext object representing a portion of this file.
+        
+        In Blender, generally in a 1:1 relationship with locally-defined
+        scenes.
         """
         fields = {}
         fields.update(self.fields)

@@ -1,7 +1,37 @@
-# std_lunatics_ink.py
+# ink_paint.py
 """
-Functions to set up the standard ink and paint compositing arrangement
-for "Lunatics"
+Standard Ink & Paint compositing, as used in "Lunatics!"
+
+The purpose of the "Ink/Paint Config" feature is to simplify setting up
+the render layers and compositing nodes for EXR Ink/Paint configuration,
+including the most common settings in our project.
+
+I'm not making any attempt to generalize this feature, since that would
+complicate the interface and defeat the purpose. Nor can I think of any
+clean way to define this functionality in the project YAML code, without
+it becoming truly byzantine. So it's set up like it is, and if you like
+"Lunatics!" style, you may find it useful. Otherwise, you'll have to
+write your own Add-on.
+
+It does support a few common variations:
+
+    * Optional 'Ink-Thru' feature, allowing Freestyle lines behind
+      'transparent' objects to be seen. 'Transparent' objects, in this
+      context has to do with them being on scene layer 4, not with any
+      material settings.
+      
+    * Optional 'Billboard' feature, allowing correct masking of Freestyle
+      ink lines around pre-rendered "billboard" objects, using transparent
+      texture maps. That is, background lines are drawn up to where the
+      visible part of the billboard would obscure them.
+      
+    * Optional 'Separate Sky' compositing. This is a work-around to allow
+      sky backgrounds to be composited correctly without being shadowed by
+      the separate shadow layer. Basically a work-around for a design flaw
+      in the BLENDER_INTERNAL renderer, when combined with compositing.
+      
+Currently (0.2.6), it only supports setups for 'cam' file rendering. It does
+not set up post-compositing files. This feature is on my road map.      
 """
 
 import os
@@ -21,6 +51,10 @@ THRU_INK_COLOR = (20,100,50)
 class LunaticsShot(object):
     """
     General class for Lunatics Blender Scene data.
+    
+    So far in 0.2.6, this duplicates a lot of function that file_context is
+    supposed to provide, with hard-coding naming methods. My plan is to strip
+    all that out and replace with calls to the appropriate NameContext object.
     """
     colorcode = {
         'paint':    (1.00, 1.00, 1.00),
@@ -86,6 +120,9 @@ class LunaticsShot(object):
         return path
 
     def cfg_scene(self, scene=None, thru=True, exr=True, multicam=False, role='shot'):
+        """
+        Configure the Blender scene for Ink/Paint.
+        """
         if not scene:
             scene = self.scene
     
@@ -145,6 +182,9 @@ class LunaticsShot(object):
         return rlayer_in
     
     def cfg_nodes(self, scene):
+        """
+        Configure the compositing nodes.
+        """
         # Create Compositing Node Tree
         scene.use_nodes = True
         tree = scene.node_tree
@@ -504,7 +544,9 @@ class LunaticsShot(object):
         
 
     def cfg_paint(self, paint_layer, name="Paint"):
-        
+        """
+        Configure the 'Paint' render layer.
+        """
         self._cfg_renderlayer(paint_layer,
             includes=True, passes=False, excludes=False,
             layers = (0,1,2,3,4, 5,6,7, 10,11,12,13,14))
@@ -535,6 +577,9 @@ class LunaticsShot(object):
 
                 
     def cfg_bbalpha(self, bb_render_layer):
+        """
+        Configure the 'BB Alpha' render layer for billboards.
+        """
         self._cfg_renderlayer(bb_render_layer,
             includes=False, passes=False, excludes=False,
             layers=(5,6, 14))
@@ -545,6 +590,9 @@ class LunaticsShot(object):
         bb_render_layer.use_pass_combined = True
         
     def cfg_bbmat(self, bb_mat_layer, thru=False):
+        """
+        Configure the 'BB Mat' material key render layer.
+        """
         self._cfg_renderlayer(bb_mat_layer,
             includes=False, passes=False, excludes=False,
             layers=(0,1,2,3, 5,6,7, 10,11,12,13,14, 15,16))
@@ -561,6 +609,9 @@ class LunaticsShot(object):
         
                 
     def cfg_sky(self, sky_render_layer):
+        """
+        Configure the separate 'Sky' render layer.
+        """
         self._cfg_renderlayer(sky_render_layer,
             includes=False, passes=False, excludes=False,
             layers=(0,1,2,3,4, 5,6,7, 10,11,12,13,14))
@@ -571,6 +622,9 @@ class LunaticsShot(object):
         
     
     def cfg_ink(self, ink_layer, name="Ink", thickness=3, color=(0,0,0)):
+        """
+        Configure a render layer for Freestyle ink ('Ink' or 'Ink-Thru').
+        """
         self._cfg_renderlayer(ink_layer,
             includes=False, passes=False, excludes=False,
             layers=(0,1,2,3, 5,6,7, 10,11,12,13, 15,16))
@@ -600,7 +654,7 @@ class LunaticsShot(object):
 
     def cfg_lineset(self, lineset, thickness=3, color=(0,0,0)):
         """
-        Configure the lineset.
+        Configure the Freestyle line set (i.e. which lines are drawn).
         """
         #lineset.name = 'NormalInk'
         # Selection options
@@ -640,6 +694,9 @@ class LunaticsShot(object):
         
 
     def cfg_linestyle(self, linestyle, thickness=INK_THICKNESS, color=INK_COLOR):
+        """
+        Configure Freestyle line style (i.e. how the lines are drawn).
+        """
         # These are the only changeable parameters:
         linestyle.color = color 
         linestyle.thickness = thickness

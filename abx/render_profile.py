@@ -1,6 +1,21 @@
 # render_profile.py
 """
 Blender Python code to set parameters based on render profiles.
+
+The purpose of the "Render Profiles" feature is to simplify setting up
+Blender to render animation according to a small number of standardized, 
+named profiles, instead of having to control each setting separately.
+
+They're sort of like predefined radio buttons for your render settings.
+
+I wrote this because I kept having to repeat the same steps to go from
+quick "GL" or "Paint" renders at low frame rates to fully-configured
+final renders, and I found the process was error-prone.
+
+In particular, it was very easy to accidentally forget to change the render
+filepath and have a previous render get overwritten! Or, alternatively, I
+might forget to set things back up for a final render after I did a previz
+animation.
 """
 
 import bpy
@@ -12,6 +27,100 @@ from . import file_context
 
 
 class RenderProfile(object):
+    """
+    A named set of render settings for Blender.
+    
+    The profile is designed to be defined by a dictionary of fields, typically
+    loaded from a project YAML file (under the key 'render_profiles').
+    
+    Attributes:
+        engine (str):
+            Mandatory choice of engine. Some aliases are supported, but the
+            standard values are: 'gl', meaning a setup for GL viewport
+            rendering, or one 'bi'/'BLENDER_INTERNAL', 'cycles'/'CYCLES',
+            or 'bge' / 'BLENDER_GAME' for rendering with the respective 
+            engines. There is no support for Eevee, because this is a 2.7-only
+            Add-on. It should be included in the port. No third-party engines
+            are currently supported.
+            
+        fps (float):
+            Frames-per-second.
+            
+        fps_skip (int):
+            Frames to skip between rendered frames (effectively divides the
+            frame rate).
+            
+        fps_divisor (float):
+            This is the weird hack for specifying NTSC-compliant fps of 29.97
+            by using 1.001 as a divisor, instead of 1.0. Avoid if you can!
+            
+        rendersize (int):
+            Percentage size of defined pixel dimensions to render. Note that
+            we don't support setting the pixel size directly. You should
+            configure that in Blender, but you can use this feature to make
+            a lower-resolution render.
+            
+        compress (int):
+            Compression ratio for image formats that support it.
+            
+        format (str):
+            Image or video output format.
+            One of: 'PNG', 'JPG', 'EXR', 'AVI' or 'MKV'.
+            Note that we don't support the full range of options, just some
+            common ones for previz and final rendering.
+            
+        freestyle (bool):
+            Whether to turn on Freestyle ink rendering.
+            
+        antialiasing_samples (str):
+            Controlled by 'antialias' key, which can be a number: 5,8,11, or 16.
+            Note that this attribute, which is used to directly set the value
+            in Blender is a string, not an integer.
+            
+        use_antialiasing (bool):
+            Controlled by 'antialias' key. Whether to turn on antialiasing.
+            Any value other than 'False' or 'None' will turn it on.
+            False turns it off. None leaves it as-is.
+            
+        motion_blur_samples (int):
+            Controlled by 'motionblur' key, which can be a number determining
+            the number of samples.
+            
+        use_motion_blur (bool):
+            Controlled by 'motionblur' key. Any value other than False or None
+            will turn on motion blur. A value of True turns it on without
+            changing the samples. A value of False turns it off. None causes
+            is to be left as-is.
+            
+        framedigits (int):
+            The number of '#' characters to use in the render filename to
+            indicate frame number. Only used if the format is an image stream.
+            
+        suffix (str):
+            A string suffix placed after the base name, but before the frame
+            number to indicate what profile was used for the render. This
+            avoids accidentally overwriting renders made with other profiles.
+            
+    Note that these attributes are not intended to be manipulated directly
+    by the user. The production designer is expected to define these
+    profiles in the <project>.yaml file under the 'render_profiles' key,
+    like this:
+        
+        render_profiles:
+            previz:
+                engine: gl
+                suffix: MP
+                fps: 30
+                fps_skip: 6
+                motionblur: False
+                antialias: False
+                freestyle: False
+                rendersize: 50
+                
+    and so on. This is then loaded by ABX into a list of RenderProfile
+    objects. Calling the RenderProfile.apply() method actually causes the
+    settings to be made.
+    """
     render_formats = {
         # VERY simplified and limited list of formats from Blender that we need:
         # <API 'format'>: (<bpy file format>, <filename extension>),
@@ -104,6 +213,9 @@ class RenderProfile(object):
     def apply(self, scene):
         """
         Apply the profile settings to the given scene.
+        
+        NOTE: in 0.2.6 this function isn't fully implemented, and the
+        render filepath will not include the proper unit name.
         """
         if self.engine:         scene.render.engine = self.engine
         if self.fps:            scene.render.fps = self.fps

@@ -146,6 +146,19 @@ class UnionList(list):
     increase the size of the result, because no new values will be found).
     """
     def union(self, other):
+        """
+        Returns a combination of the current list with unique new options added.
+        
+        Arguments:
+            other (list): The other list from which new options will be taken.
+            
+        Returns:
+            A list with the original options and any unique new options from the
+            other list. This is intentionally asymmetric behave which results
+            in the union operation being idempotent, retaining the original order,
+            and emulating the set 'union' behavior, except that non-unique entries
+            in the original list will be unharmed.
+        """
         combined = UnionList(self)
         for element in other:
             if element not in self:
@@ -161,10 +174,38 @@ class RecursiveDict(collections.OrderedDict):
     (when the replacement value is also a list).
     """
     def clear(self):
+        """
+        Clear the dictionary to an empty state.
+        """
         for key in self:
             del self[key]
             
     def update(self, mapping):
+        """
+        Load information from another dictionary / mapping object.
+        
+        mapping (dict):
+            The dictionary (or any mapping object) from which the update
+            is made. It does not matter if the object is a RecursiveDict
+            or not, it will result in the same behavior.
+            
+        Unlike an ordinary dictionary update, this version works recursively.
+        
+        If a key exists in both this dictionary and the dictionary from
+        which the update is being made, and that key is itself a dictionary,
+        it will be combined in the same way, rather than simply being
+        overwritten at the top level.
+        
+        If the shared key represents a list in both dictionaries, then it
+        will be combined using the list's union operation.
+        
+        This behavior allows multiple, deeply-nested dictionary objects to
+        be overlaid one on top of the other in a idempotent way, without
+        clobbering most content.
+        
+        There are issues that can happen if a dictionary value is replaced
+        with a list or a scalar in the update source.
+        """
         for key in mapping:
             if key in self:
                 if   (isinstance(self[key], collections.abc.Mapping) and
@@ -188,6 +229,9 @@ class RecursiveDict(collections.OrderedDict):
                 self[key] = mapping[key]
                 
     def get_data(self):
+        """
+        Returns the contents stripped down to an ordinary Python dictionary.
+        """
         new = {}
         for key in self:
             if isinstance(self[key], RecursiveDict):
@@ -225,18 +269,30 @@ class RecursiveDict(collections.OrderedDict):
         return s
     
     def from_yaml(self, yaml_string):
+        """
+        Initialize dictionary from YAML contained in a string.
+        """
         self.update(yaml.safe_load(yaml_string))
         return self
     
     def from_yaml_file(self, path):
+        """
+        Initialize dictionary from a separate YAML file on disk.
+        """
         with open(path, 'rt') as yamlfile:
             self.update(yaml.safe_load(yamlfile))
         return self
             
     def to_yaml(self):
+        """
+        Serialize dictionary contents into a YAML string.
+        """
         return yaml.dump(self.get_data())
     
     def to_yaml_file(self, path):
+        """
+        Serialize dictionary contents to a YAML file on disk.
+        """
         with open(path, 'wt') as yamlfile:
             yamlfile.write(yaml.dump(self.get_data()))
 
@@ -255,11 +311,12 @@ def collect_yaml_files(path, stems, dirmatch=False, sidecar=False, root='/'):
     
     Does not attempt to read or interpret the files.
     
-    @path: The starting point, typically the antecedent filename.
-    @stems: File stem (or sequence of stems) we recognize (in priority order).
-    @dirmatch: Also search for stems matching the containing directory name?
-    @sidecar: Also search for stems matching the antecent filename's stem?
-    @root: Top level directory to consider (do not search above this).
+    Arguments:
+        path:      The starting point, typically the antecedent filename.
+        stems:     File stem (or sequence of stems) we recognize (in priority order).
+        dirmatch:  Also search for stems matching the containing directory name?
+        sidecar:   Also search for stems matching the antecedent filename's stem?
+        root:      Top level directory to consider (do not search above this).
     
     "Stem" means the name with any extension after "." removed (typically,
     the filetype).
@@ -294,6 +351,16 @@ def collect_yaml_files(path, stems, dirmatch=False, sidecar=False, root='/'):
         
         
 def has_project_root(yaml_path):
+    """
+    Does the YAML file contain the 'project_root' key?
+    
+    Arguments:
+        yaml_path (str): Filepath to the current YAML file being processed.
+        
+    Returns:
+        Whether or not the file contains the 'project_root' key defining its
+        containing folder as the root folder for this project.
+    """
     with open(yaml_path, 'rt') as yaml_file:
         data = yaml.safe_load(yaml_file)
     if 'project_root' in data:
@@ -302,12 +369,30 @@ def has_project_root(yaml_path):
         return False
     
 def trim_to_project_root(yaml_paths):
+    """
+    Trim the path to the project root location.
+    
+    Arguments:
+        yaml_paths (list[str]): The list of YAML file paths.
+        
+    Returns:
+        Same list, but with any files above the project root removed.
+    """
     for i in range(len(yaml_paths)-1,-1,-1):
         if has_project_root(yaml_paths[i]):
             return yaml_paths[i:]
     return yaml_paths
 
 def get_project_root(yaml_paths):
+    """
+    Get the absolute file system path to the root folder.
+    
+    Arguments:
+        yaml_paths (list[str]): The list of YAML file paths.
+        
+    Returns:
+        The absolute path to the top of the project.
+    """
     trimmed = trim_to_project_root(yaml_paths)
     if trimmed:
         return os.path.dirname(trimmed[0])
@@ -316,6 +401,15 @@ def get_project_root(yaml_paths):
         return '/'
 
 def combine_yaml(yaml_paths):
+    """
+    Merge a list of YAML texts into a single dictionary object.
+    
+    Arguments:
+        yaml_paths (list[str]): The list of YAML file paths to be combined.
+        
+    Returns:
+        A RecursiveDict containing the collected data.
+    """
     data = RecursiveDict()
     for path in yaml_paths:
         with open(path, 'rt') as yaml_file:
@@ -323,6 +417,16 @@ def combine_yaml(yaml_paths):
     return data
             
 def get_project_data(filepath):
+    """
+    Collect the project data from the file system.
+    
+    Arguments:
+        filepath (str): Path to the file.
+        
+    Returns:
+        Data collected from YAML files going up the
+        tree to the project root.
+    """
     # First, get the KitCAT data.
     kitcat_paths = collect_yaml_files(filepath,
         ('kitcat', 'project'), dirmatch=True, sidecar=True)

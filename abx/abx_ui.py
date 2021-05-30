@@ -111,6 +111,11 @@ seq_id_table = {
 
 
 def get_seq_ids(self, context):
+    """
+    Specific function to retrieve enumerated values for sequence units.
+    
+    NOTE: due to be replaced by file_context features.
+    """
     # 
     # Note: To avoid the reference bug mentioned in the Blender documentation,
     # we only return values held in the global seq_id_table, which
@@ -214,6 +219,9 @@ render_profile_table = {
 class LunaticsSceneProperties(bpy.types.PropertyGroup):
     """
     Properties of the current scene.
+    
+    NOTE: due to be replaced by 'ProjectProperties', using the schema data
+    retrieved by file_context.
     """
     series_id = bpy.props.EnumProperty(
         items=[
@@ -286,6 +294,8 @@ class LunaticsSceneProperties(bpy.types.PropertyGroup):
 class LunaticsScenePanel(bpy.types.Panel):
     """
     Add a panel to the Properties-Scene screen
+    
+    NOTE: To be replaced by 'ProjectPropertiesPanel'.
     """
     bl_idname = 'SCENE_PT_lunatics'
     bl_label = 'Lunatics Project'
@@ -314,6 +324,9 @@ class LunaticsScenePanel(bpy.types.Panel):
 class RenderProfileSettings(bpy.types.PropertyGroup):
     """
     Settings for Render Profiles control.
+    
+    NOTE: currently (0.2.6) uses hard-coded values. Planned to
+    switch to project-defined values.
     """    
     render_profile = bpy.props.EnumProperty(
         name='Profile',
@@ -435,6 +448,11 @@ class copy_animation_settings(bpy.types.PropertyGroup):
 
 
 class CharacterPanel(bpy.types.Panel):
+    """
+    Features for working with characters and armatures.
+    
+    Currently only includes the CopyAnimation operator.
+    """
     bl_space_type = "VIEW_3D" # window type panel is displayed in
     bl_context = "objectmode"
     bl_region_type = "TOOLS" # region of window panel is displayed in
@@ -456,7 +474,7 @@ class CharacterPanel(bpy.types.Panel):
     
 class lunatics_compositing_settings(bpy.types.PropertyGroup):
     """
-    Settings for the LX compositor tool.
+    Settings for Ink/Paint Config.
     """
     inkthru = bpy.props.BoolProperty(
         name = "Ink-Thru",
@@ -476,7 +494,7 @@ class lunatics_compositing_settings(bpy.types.PropertyGroup):
   
 class lunatics_compositing(bpy.types.Operator):
     """
-    Set up standard Lunatics scene compositing.
+    Ink/Paint Config Operator.
     """
     bl_idname = "scene.lunatics_compos"
     bl_label = "Ink/Paint Config"
@@ -507,6 +525,9 @@ class lunatics_compositing(bpy.types.Operator):
 
          
 class LunaticsPanel(bpy.types.Panel):
+    """
+    Ink/Paint Configuration panel.
+    """
     bl_space_type = "VIEW_3D"
     bl_context = "objectmode"
     bl_region_type = "TOOLS"
@@ -527,6 +548,9 @@ BlendFile = file_context.FileContext()
         
 @persistent
 def update_handler(ctxt):
+    """
+    Keeps FileContext up-to-date with Blender file loaded.
+    """
     BlendFile.update(bpy.data.filepath)
      
         

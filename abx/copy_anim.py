@@ -1,6 +1,28 @@
 # copy_anim.py
 """
 Blender Python code to copy animation between armatures or proxy armatures.
+
+The purpose of the 'Copy Animation' feature is to allow for animation to be
+copied from one armature to another, en masse, rather than having to individual
+push and move action objects.
+
+The main use for this is to repair files in which animated proxy rigs have
+become incompatible or broken for some reason. Common examples include a name
+change in the rig or armature object in a character asset file, extra bones
+added, and so on. There is no simple way in Blender to update these proxies.
+
+It is possible to create a new proxy, though, and with this tool to speed up
+the process, the animation can be transferred to it all at once.
+
+The tool also allows for the animation to be correctly copied and scaled by
+a scale factor, so that animation can be copied from a proxy defined at one
+scale to one defined at another.
+
+This comes up when an animation file was built incorrectly at the wrong scale
+and needs to be corrected, after animating has already begun.
+
+The scaling feature has been tested on Rigify-based rigs, and resets the
+bone constraints as needed, during the process.
 """
 
 import bpy, bpy.types, bpy.utils, bpy.props
