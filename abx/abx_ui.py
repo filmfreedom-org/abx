@@ -41,7 +41,6 @@ from . import copy_anim
 from abx import ink_paint
 from . import render_profile
 
-
 #configfile = os.path.join(os.path.dirname(__file__), 'config.yaml')
 
 #print("Configuration file path: ", os.path.abspath(configfile))
@@ -223,6 +222,17 @@ class LunaticsSceneProperties(bpy.types.PropertyGroup):
     NOTE: due to be replaced by 'ProjectProperties', using the schema data
     retrieved by file_context.
     """
+    name_context_id = bpy.props.StringProperty(options={'HIDDEN', 'LIBRARY_EDITABLE'})
+    
+    @property
+    def name_context(self):
+        if self.name_context_id in BlendFile.name_contexts:
+            return BlendFile.name_contexts[self.name_context_id]
+        else:
+            name_context = BlendFile.new_name_context()
+            self.name_context_id = str(id(name_context))
+            return name_context
+    
     series_id = bpy.props.EnumProperty(
         items=[
             ('S1', 'S1', 'Series One'),

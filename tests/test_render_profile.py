@@ -63,7 +63,7 @@ class TestRenderProfile_Implementation(unittest.TestCase):
         self.assertEqual(self.scene.render.resolution_percentage, 100)
         self.assertEqual(self.scene.render.image_settings.compression, 50)
         
-    
+
         
         
         

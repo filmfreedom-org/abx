@@ -1344,7 +1344,7 @@ class FileContext(NameContext):
             
         # Containers
         #self.notes = []
-        self.name_contexts = []
+        self.name_contexts = {}
                 
         # Status / Settings
         self.filepath = None
@@ -1636,8 +1636,11 @@ class FileContext(NameContext):
         
         namepath_segment = []                      
         ranks = [s.rank for s in self.schemas]        
-        i_rank = len(self.namepath)        
-        old_rank = ranks[i_rank -1]
+        i_rank = len(self.namepath) 
+        if i_rank == 0:
+            old_rank = None       
+        else:
+            old_rank = ranks[i_rank -1]
         
         # The new rank will be the highest rank mentioned, or the
         # explicitly requested rank or
@@ -1655,17 +1658,24 @@ class FileContext(NameContext):
                 if ranks.index(schema.rank) <= ranks.index(rank):
                     new_rank = schema.rank
                     
-        delta_rank = ranks.index(new_rank) - ranks.index(old_rank)
+        if old_rank:
+            delta_rank = ranks.index(new_rank) - ranks.index(old_rank)
+        else:
+            # I think in this case, it's as if the old_rank number is -1?
+            delta_rank = ranks.index(new_rank) + 1
                 
         # Truncate to the new rank:
         namepath_segment = namepath_segment[:delta_rank]
         
         fields['rank'] = new_rank
         fields['code'] = namepath_segment[-1]
-                    
-        self.name_contexts.append(NameContext(self, fields,
-                namepath_segment=namepath_segment))
-        return self.name_contexts[-1]
+        
+        name_context = NameContext(self, fields, 
+                                   namepath_segment=namepath_segment)
+        
+        self.name_contexts[str(id(name_context))] = name_context
+        
+        return name_context
     
 
 
