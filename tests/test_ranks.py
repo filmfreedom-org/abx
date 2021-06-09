@@ -12,17 +12,17 @@ from abx import ranks
 
 class BranchTests(unittest.TestCase):
     def test_trunk_branch(self):
-        t = ranks.trunk.rank('')
-        f = ranks.trunk.rank('file')
-        s = ranks.trunk.rank('scene')
-        self.assertEqual(repr(ranks.trunk), "<branch 'trunk': file, scene>")
-        self.assertIn(t, ranks.trunk)
-        self.assertIn(f, ranks.trunk)
-        self.assertIn(s, ranks.trunk)
+        t = ranks.Trunk.rank('')
+        f = ranks.Trunk.rank('file')
+        s = ranks.Trunk.rank('scene')
+        self.assertEqual(repr(ranks.Trunk), "<branch 'Trunk': file, scene>")
+        self.assertIn(t, ranks.Trunk)
+        self.assertIn(f, ranks.Trunk)
+        self.assertIn(s, ranks.Trunk)
         
     
     def test_defining_branch(self):
-        b = ranks.Branch(ranks.trunk, 'myproject', 1,
+        b = ranks.Branch(ranks.Trunk, 'myproject', 1,
             ('project', 'series', 'episode', 'sequence',
              'block', 'shot', 'element'))
         
@@ -30,7 +30,7 @@ class BranchTests(unittest.TestCase):
 
 class RanksTests(unittest.TestCase):
     def setUp(self):
-        self.b = ranks.Branch(ranks.trunk, 'myproject', 1,
+        self.b = ranks.Branch(ranks.Trunk, 'myproject', 1,
             ('project', 'series', 'episode', 'sequence',
              'block', 'shot', 'element'))
         
@@ -115,12 +115,12 @@ class RanksTests(unittest.TestCase):
         pr = self.b.rank('project')
         
         r = se - 1  # Normal - 'project' is one below 'series'
-        s = se - 2  # ? Should this be 'project' or 'trunk'/None?
+        s = se - 2  # ? Should this be 'project' or 'Trunk'/None?
         t = se - 3  #      "`            "
         
         self.assertEqual(r, pr)
-        self.assertEqual(s, ranks.trunk)
-        self.assertEqual(t, ranks.trunk)
+        self.assertEqual(s, ranks.Trunk)
+        self.assertEqual(t, ranks.Trunk)
         
     
     def test_rank_slices_from_branch(self):
@@ -155,5 +155,15 @@ class RanksTests(unittest.TestCase):
         self.assertEqual(
             ranks.branch,
             self.b)
-
+    
+    def test_using_rank_as_key(self):
+        d = dict(zip(self.b.ranks, range(len(self.b.ranks))))
+        R = self.b.rank
+        
+        self.assertDictEqual(d, {
+            R('trunk'):0,      R('project'):1,  R('series'):2,  R('episode'):3,
+            R('sequence'):4,   R('block'):5,    R('shot'):6,    R('element'):7
+            })
+        
+        
     

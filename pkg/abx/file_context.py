@@ -521,7 +521,7 @@ class Parser_ABX_Fallback(object):
 class RankNotFound(LookupError):
     pass
     
-class NameSchema(object):
+class FieldSchema(object):
     """
     Represents a schema used for parsing and constructing designations, names, etc.
     """
@@ -686,7 +686,7 @@ class NameSchema(object):
 
         
     def __repr__(self):
-        return('<(%s).NameSchema: %s (%s, %s, %s, (%s))>' % (
+        return('<(%s).FieldSchema: %s (%s, %s, %s, (%s))>' % (
             repr(self.parent),
             #self.irank, 
             self.rank,
@@ -751,11 +751,11 @@ class NameContext(object):
         """
         Load schemas from a list of schema dictionaries.
         
-        @schemas: list of dictionaries containing schema field data (see NameSchema).
+        @schemas: list of dictionaries containing schema field data (see FieldSchema).
         The data will typically be extracted from YAML, and is
         expected to be a list of dictionaries, each of which defines
-        fields understood by the NameSchema class, to instantiate
-        NameSchema objects. The result is a linked chain of schemas from
+        fields understood by the FieldSchema class, to instantiate
+        FieldSchema objects. The result is a linked chain of schemas from
         the top of the project tree down.
         
         @start: if a start value is given, the top of the existing schema
@@ -769,7 +769,7 @@ class NameContext(object):
         else:
             last = None
         for schema in schemas:
-            self.schemas.append(NameSchema(last, schema['rank'], schema=schema))
+            self.schemas.append(FieldSchema(last, schema['rank'], schema=schema))
             #last = self.schemas[-1]
             
     def _parse_words(self, wordtext):

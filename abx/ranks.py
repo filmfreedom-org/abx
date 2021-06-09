@@ -6,8 +6,12 @@ Objects for representing the ranks of a hierarchy, with the
 possibility of branching at nodes with redefined ranks via
 the 'project_schema' directives in project YAML files.
 """
-
-import numbers
+    
+class RankNotFound(LookupError):
+    """
+    Error returned if an unexpected 'rank' is encountered.
+    """
+    pass
 
 class Branch(object):
     """
@@ -37,7 +41,7 @@ class Branch(object):
         if self.code:
             code = self.code
         else:
-            code = 'trunk'
+            code = 'Trunk'
         return "<branch '%s': %s>" % (code, ranklist)
     
     def __contains__(self, other):
@@ -53,9 +57,13 @@ class Branch(object):
         if isinstance(n, int) and 0 < n < len(self._ranks):
             return self._ranks[n]
         elif isinstance(n, str):
+            if n.lower()=='trunk':
+                return self._ranks[0]
             for rank in self._ranks:
                 if str(rank) == n:
                     return rank
+        elif n==0:
+            self._ranks[0]
         else:
             raise TypeError
             
@@ -168,7 +176,7 @@ class Rank(object):
             if (self.num + other) < len(self.branch.ranks):
                 return self.branch.ranks[self.num+other]
             elif (self.num + other) < 1:
-                return trunk
+                return Trunk
             else:
                 return None
         else:
@@ -184,7 +192,7 @@ class Rank(object):
             if 0 < (self.num - other) < len(self.branch.ranks):
                 return self.branch.ranks[self.num-other]
             elif (self.num - other) < 1:
-                return trunk
+                return Trunk
             elif (self.num - other) > len(self.branch.ranks):
                 return None
         else:
@@ -241,7 +249,7 @@ class RankList(list):
         return super().__getitem__(i)
                     
     
-# Define the trunk branch object
+# Define the Trunk branch object
 # This schema will make sense for any unaffiliated Blender document,
 # even if it hasn't been saved as a file yet:
-trunk = Branch(None, '', 0, ('', 'file', 'scene'))
+Trunk = Branch(None, '', 0, ('', 'file', 'scene'))

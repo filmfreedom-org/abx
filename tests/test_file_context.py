@@ -63,9 +63,9 @@ class FileContext_Utilities_Tests(unittest.TestCase):
 
 class FileContext_NameSchema_Interface_Tests(unittest.TestCase):
     """
-    Test the interfaces presented by NameSchema.
+    Test the interfaces presented by FieldSchema.
     
-    NameSchema is not really intended to be used from outside the
+    FieldSchema is not really intended to be used from outside the
     file_context module, but it is critical to the behavior of the
     module, so I want to make sure it's working as expected.
     """    
@@ -88,59 +88,7 @@ class FileContext_NameSchema_Interface_Tests(unittest.TestCase):
                      {'rank': 'block',   'delimiter':'-', 'format':'{!s:1s}'},
                      {'rank': 'shot',    'delimiter':'-', 'format':'{!s:s}'},
                      {'rank': 'element', 'delimiter':'-', 'format':'{!s:s}'}]
-    
-    def test_NameSchema_create_single(self):
-        ns = file_context.NameSchema(schema = self.TESTSCHEMA_LIST[0])
-       
-        # Test for ALL the expected properties:
-        
-        # Set by the test schema
-        self.assertEqual(ns.rank, 'project')
-        self.assertEqual(ns.delimiter, '-')
-        self.assertEqual(ns.format, '{:s}')
-        self.assertEqual(ns.words, True)
-        self.assertEqual(ns.codetype, str)
-        
-        # Default values
-        self.assertEqual(ns.pad, '0')
-        self.assertEqual(ns.minlength, 1)
-        self.assertEqual(ns.maxlength, 0)
-        self.assertEqual(ns.default, None)
-        
-        # Candidates for removal:
-        self.assertEqual(ns.irank, 0)   # Is this used at all?
-        self.assertEqual(ns.parent, None)
-        self.assertListEqual(list(ns.ranks),
-            ['series', 'episode', 'sequence', 
-             'block', 'camera', 'shot', 'element'])
-        
-    def test_NameSchema_load_chain_from_project_yaml(self):
-        with open(self.TESTPROJECTYAML, 'rt') as yaml_file:
-            data = yaml.safe_load(yaml_file)
-        schema_dicts = data['project_schema']
-        
-        schema_chain = []
-        last = None
-        for schema_dict in schema_dicts:
-            rank = schema_dict['rank']
-            parent = last
-            schema_chain.append(file_context.NameSchema(
-                parent = parent,
-                rank = rank,
-                schema = schema_dict))
-            last = schema_chain[-1]
-            
-        #print( schema_chain )
-        
-        self.assertEqual(len(schema_chain), 8)
-        
-        self.assertEqual(
-            schema_chain[-1].parent.parent.parent.parent.parent.parent.parent.rank,
-            'project')
-        
-        self.assertEqual(schema_chain[5].rank, 'camera')
-        self.assertEqual(schema_chain[5].codetype[1], ('c2', 'c2', 'c2')) 
-                
+
          
     
 
@@ -218,7 +166,7 @@ class FileContext_Parser_UnitTests(unittest.TestCase):
                 'A.001-LP-1-BeginningOfEnd-anim.txt')
     
     def setUp(self):
-        self.TESTSCHEMAS = [file_context.NameSchema(    #rank=s['rank'], 
+        self.TESTSCHEMAS = [file_context.FieldSchema(    #rank=s['rank'], 
                                 schema=s)
                                 for s in self.TESTSCHEMA_LIST]
       
