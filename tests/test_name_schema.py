@@ -16,6 +16,8 @@ sys.path.append(os.path.normpath(os.path.join(__file__, '..', '..')))
 
 from abx import name_schema
 
+from abx import ranks as ranks_mod
+
 class FileContext_NameSchema_Interface_Tests(unittest.TestCase):
     """
     Test the interfaces presented by FieldSchema.
@@ -95,6 +97,27 @@ class FileContext_NameSchema_Interface_Tests(unittest.TestCase):
         
         self.assertEqual(schema_chain[5].rank, 'camera')
         self.assertEqual(schema_chain[5].codetype[1], ('c2', 'c2', 'c2'))
+        
+    def test_FieldSchema_Branch_load_from_project_yaml(self):
+        with open(self.TESTPROJECTYAML, 'rt') as yaml_file:
+            data = yaml.safe_load(yaml_file)
+        schema_dicts = data['project_schema']
+        
+        ranks = [s['rank'] for s in schema_dicts]
+        
+        branch = ranks_mod.Branch(
+                    ranks_mod.Trunk,
+                    data['project_unit'][-1]['code'],
+                    1,
+                    ranks)
+        
+        print("\nbranch = ", branch)
+        
+        print("\nbranch.rank('project') = ", repr(branch.rank('project')))
+        
+        self.assertTrue(False)
+        
+        
         
         
         

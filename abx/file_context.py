@@ -242,7 +242,7 @@ class FileContext(NameContext):
                 'scene': 0}
         
         # Defaults
-        self.provided_data = RecursiveDict(DEFAULT_YAML)
+        self.provided_data = RecursiveDict(DEFAULT_YAML, source='default')
         self.abx_fields = DEFAULT_YAML['abx']
                      
     def clear_notes(self):
@@ -280,7 +280,7 @@ class FileContext(NameContext):
 
         # Data from YAML Files                 
         #self._collect_yaml_data()
-        self.provided_data = RecursiveDict(DEFAULT_YAML)
+        self.provided_data = RecursiveDict(DEFAULT_YAML, source='default')
         
         kitcat_root, kitcat_data, abx_data = accumulate.get_project_data(self.filepath)
         self.root = kitcat_root

@@ -13,3 +13,7 @@ testdict:
         b: 3
         d: 3
         e: 4
+
+    D:
+        - b: 2
+          c: 3

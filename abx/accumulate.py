@@ -102,6 +102,81 @@ import yaml
 
 wordre = re.compile(r'([A-Z]+[a-z]*|[a-z]+|[0-9]+)')
 
+def merge_slices(slices):
+    """
+    Given a list of slice objects, merge into minimum list of new slices to cover same elements.
+    
+    The idea is to catch contiguous or overlapping slices and reduce them to a single slice.
+    
+    Arguments:
+        slices (list(slice)):    List of slices to be merged.
+    """
+    if isinstance(slices, slice):
+        slices = [slices]
+    slices = list(slices)
+    ordered = sorted(slices, key = lambda a: a.start)
+    merged = []
+    while ordered:
+        s = ordered.pop(0)
+        while ordered and ordered[0].start <= s.stop:
+            r = ordered.pop(0)
+            s = slice(s.start, max(s.stop,r.stop))
+        merged.append(s)
+    return tuple(merged)
+
+def update_slices(old_slices, new):
+    if isinstance(old_slices, slice):
+        old_slices = [old_slices]
+    
+    new_slices = []
+    for old in old_slices:        
+        if (old.start < new.start <= old.stop) and (new.stop >= old.stop):
+            # Leading overlap Old:  |-----|
+            #                 New:     |-----|
+            new_slices.append(slice(old.start, new.start))
+        elif  (old.start <= new.stop < old.stop) and (new.start <= old.start):
+            # Trailing overlap Old:     |-----|
+            #                  New: |-----|
+            new_slices.append(slice(new.stop, old.stop))
+        elif  (new.start <= old.start) and (new.stop >= old.stop):
+            # Contains         Old:   |--|
+            #                  New: |------|
+            pass
+        elif (new.start > old.stop) or (new.stop < old.start):
+            # No overlap       Old: |---|
+            #                  New:        |---|
+            new_slices.append(old)
+        elif (old.start < new.start) and (new.stop < old.stop):
+            # Split            Old: |-------|
+            #                  New:    |--|
+            new_slices.append(slice(old.start,new.start))
+            new_slices.append(slice(new.stop, old.stop))
+            
+    if len(new_slices)==1:
+        new_slices = new_slices[0]
+    elif len(new_slices)==0:
+        new_slices = None
+    else:
+        new_slices = tuple(new_slices)
+        
+    return new_slices
+            
+def listable(val):
+    """
+    Can val be coerced to UnionList?
+    """
+    return ((isinstance(val, collections.abc.Sequence) or
+             isinstance(val, collections.abc.Set))
+                and not
+            (type(val) in (bytes, str)) )
+    
+def dictable(val):
+    """
+    Can val be coerced to RecursiveDict?
+    """
+    return isinstance(val, collections.abc.Mapping)
+        
+
 class OrderedSet(collections.abc.Set):
     """
     List-based set from Python documentation example.
@@ -144,13 +219,59 @@ class UnionList(list):
     files, which may or may not contain repetitions for different uses, but
     also makes accumulation idempotent (running the union twice will not
     increase the size of the result, because no new values will be found).
+    
+    Attributes:
+        source:    A dictionary mapping source objects to slice objects
+                   according to which union (or original definition) they
+                   come from.    
     """
-    def union(self, other):
+    def __init__(self, data, source=None, override=True):
+        self.source = {}
+        super().__init__(data)
+        
+        if hasattr(data, 'source') and not override:
+            self.source = data.source.copy()
+            if source is not None and None in self.source:
+                self.source[source] = self.source[None]
+                del self.source[None]
+        else:          
+            self.source[source] = slice(0,len(self))
+            
+        # if source is None and hasattr(data, 'source'):
+        #     self.source = data.source.copy()
+        # else:
+        #     self.source[source] = slice(0,len(self))
+            
+    def __repr__(self):
+        return "UnionList(%s)" % super().__repr__()
+        
+    def __getitem__(self, query):
+        if isinstance(query, int) or isinstance(query, slice):
+            return super().__getitem__(query)
+        elif isinstance(query, tuple):
+            result = []
+            for element in query:
+                result.extend(super().__getitem__(element))
+            return result
+        elif query in self.source:
+            return self[self.source[query]]
+        else:
+            raise ValueError("No source %s, " % repr(query) +
+                             "not a direct int, slice, or tuple of same.") 
+        
+    def union(self, other, source=None):
         """
         Returns a combination of the current list with unique new options added.
         
         Arguments:
-            other (list): The other list from which new options will be taken.
+            other (list):   
+                The other list from which new options will be taken.
+            
+            source(hashable):
+                A provided object identifying the source of the new
+                information (can be any type -- will be stored in
+                the 'source' dictionary, along with the slice to
+                which it applies).
             
         Returns:
             A list with the original options and any unique new options from the
@@ -160,9 +281,68 @@ class UnionList(list):
             in the original list will be unharmed.
         """
         combined = UnionList(self)
+        combined.source = {}
+        
+        old_len = len(combined)
+                
+        # This is the actual union operation
+        j = old_len
+        new_elements = []
         for element in other:
             if element not in self:
-                combined.append(element)
+                new_elements.append(element)
+                    
+        combined.extend(new_elements)
+        
+        combined.source = self.source.copy()
+        
+        if source is None and hasattr(other, 'source'):
+            # Other is a UnionList and may have complex source information
+            for j, element in enumerate(new_elements):
+                for src in other.source:
+                    if src not in self.source:
+                        combined.source[src] = []
+                    elif isinstance(self.source[src], slice):
+                        combined.source[src] = [self.source[src]]
+                    elif isinstance(self.source[src], tuple):
+                        combined.source[src] = list(self.source[src])
+                    if element in other[other.source[src]]:
+                        combined.source[src].append(slice(old_len,old_len+j+1))                
+                
+            for src in combined.source:
+                combined.source[src] = merge_slices(combined.source[src])
+                if len(combined.source[src]) == 0:
+                    del combined.source[src]
+                elif len(combined.source[src]) == 1:
+                    combined.source[src] = combined.source[src][0]
+                    
+        else:
+            # Source-naive list, only explicitly provided source:
+            new_slice = slice(old_len, len(combined))
+        
+            for src in self.source:
+                upd = update_slices(self.source[src], new_slice)
+                if upd:
+                    combined.source[src] = upd
+                
+            if source in self.source:
+                # If a source is used twice, we have to merge it
+                # into the existing slices for that source
+                if isinstance(self.source[source], slice):
+                    new_slices = (self.source[source], new_slice)
+            
+                elif isinstance(self.source[source], collections.Sequence):
+                    new_slices = self.source[source] + (new_slice,)
+            
+                new_slices = tuple(merge_slices(new_slices))
+            
+                if len(new_slices) == 1:
+                    combined.source[source] = new_slices[0]
+                else:
+                    combined.source[source] = tuple(new_slices)
+            else:
+                combined.source[source] = new_slice
+                    
         return combined
     
 class RecursiveDict(collections.OrderedDict):
@@ -173,14 +353,22 @@ class RecursiveDict(collections.OrderedDict):
     as UnionLists and applying the union operation to combine them
     (when the replacement value is also a list).
     """
+    def __init__(self, data=None, source=None, active_source=None):
+        self.active_source = active_source
+        self.source = {}
+        super().__init__()
+        if isinstance(data, collections.abc.Mapping):
+            self.update(data, source=source)
+
     def clear(self):
         """
         Clear the dictionary to an empty state.
         """
         for key in self:
             del self[key]
+        self.source = {}
             
-    def update(self, mapping):
+    def update(self, other, source=None):
         """
         Load information from another dictionary / mapping object.
         
@@ -206,27 +394,42 @@ class RecursiveDict(collections.OrderedDict):
         There are issues that can happen if a dictionary value is replaced
         with a list or a scalar in the update source.
         """
-        for key in mapping:
+        if source is None and hasattr(other, 'source'):
+            def get_source(key):
+                return other.source[key]
+        else:
+            def get_source(key):
+                return source
+            
+        for key in other:
             if key in self:
-                if   (isinstance(self[key], collections.abc.Mapping) and
-                      isinstance(mapping[key], collections.abc.Mapping)):
-                    # Subdictionary
-                    newvalue = RecursiveDict(self[key])
-                    newvalue.update(RecursiveDict(mapping[key]))
-                    self[key] = newvalue
+                old = self[key]
+                new = other[key]
+                
+                if dictable(old) and dictable(new):   
+                    old.update(RecursiveDict(new), source=get_source(key))
                     
-                elif ((isinstance(self[key], collections.abc.MutableSequence) or
-                       isinstance(self[key], collections.abc.Set)) and 
-                      (isinstance(mapping[key], collections.abc.MutableSequence) or
-                       isinstance(mapping[key], collections.abc.Set))):
-                    # Sublist
-                    self[key] = UnionList(self[key]).union(UnionList(mapping[key]))
-                    
+                elif listable(old) and listable(new):
+                    self.__setitem__(key, old.union(new), source=self.source[key])
+                    #self.__setitem__(key, old.union(UnionList(new)),
+                    #                    source=self.source[key])
+
+                    # self.__setitem__(key, old.union(UnionList(new), 
+                    #                     source=get_source(key)),
+                    #                     source=self.source[key])                
                 else: # scalar
-                    self[key] = mapping[key]
+                    self.__setitem__(key, other[key], source=get_source(key))
                     
             else: # new key
-                self[key] = mapping[key]
+                self.__setitem__(key, other[key], source=get_source(key))
+                
+    def copy(self):
+        copy = RecursiveDict()
+        for key in self:
+            copy[key] = self[key]
+        for key in self.source:
+            copy.source[key] = self.source[key]
+        return copy
                 
     def get_data(self):
         """
@@ -242,13 +445,16 @@ class RecursiveDict(collections.OrderedDict):
                 new[key]=self[key]
         return new
     
-    def __setitem__(self, key, value):
-        if isinstance(value, collections.abc.Mapping):
-            super().__setitem__(key, RecursiveDict(value))
+    def __setitem__(self, key, value, source=None):
+        if not source:
+            source = self.active_source
             
-        elif isinstance(value, collections.abc.MutableSequence):
-            super().__setitem__(key, UnionList(value))
+        self.source[key] = source
             
+        if dictable(value):
+            super().__setitem__(key, RecursiveDict(value, source=source))
+        elif listable(value):
+            super().__setitem__(key, UnionList(value, source=source, override=False))
         else:
             super().__setitem__(key,value)
             
@@ -268,11 +474,11 @@ class RecursiveDict(collections.OrderedDict):
             s = s + ')'
         return s
     
-    def from_yaml(self, yaml_string):
+    def from_yaml(self, yaml_string, source=None):
         """
         Initialize dictionary from YAML contained in a string.
         """
-        self.update(yaml.safe_load(yaml_string))
+        self.update(yaml.safe_load(yaml_string), source=source)
         return self
     
     def from_yaml_file(self, path):
@@ -280,7 +486,7 @@ class RecursiveDict(collections.OrderedDict):
         Initialize dictionary from a separate YAML file on disk.
         """
         with open(path, 'rt') as yamlfile:
-            self.update(yaml.safe_load(yamlfile))
+            self.update(yaml.safe_load(yamlfile), source=path)
         return self
             
     def to_yaml(self):
@@ -413,7 +619,7 @@ def combine_yaml(yaml_paths):
     data = RecursiveDict()
     for path in yaml_paths:
         with open(path, 'rt') as yaml_file:
-            data.update(yaml.safe_load(yaml_file))
+            data.update(yaml.safe_load(yaml_file), source=path)
     return data
             
 def get_project_data(filepath):
