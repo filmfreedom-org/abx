@@ -337,13 +337,13 @@ class AccumulationTests(unittest.TestCase):
         print("A.get_data() = ", A.get_data())
         print("A.source = ", A.source)
         
-        self.assertEqual(sorted(list(A.keys())), ['abx', 'testdict', 'testscalar'])
+        self.assertEqual(sorted(list(A.keys())), ['abx', 'render_profiles', 'testdict', 'testscalar'])
         
         self.assertEqual(sorted(list(A['testdict'].keys())), ['A', 'B', 'C', 'D'])
         self.assertEqual(sorted(list(A['testdict']['A'])), ['item1', 'item2', 'item3'])
         
         self.assertDictEqual(A.source, 
-            {'abx':'myproj', 'testdict':'myproj', 'testscalar':'myproj'})
+            {'abx':'myproj', 'render_profiles':'myproj', 'testdict':'myproj', 'testscalar':'myproj'})
         
         
         self.assertDictEqual(A['testdict'].source, {
@@ -368,13 +368,13 @@ class AccumulationTests(unittest.TestCase):
         
         A.update(B)
         
-        self.assertEqual(sorted(list(A.keys())), ['abx', 'testdict', 'testscalar'])
+        self.assertEqual(sorted(list(A.keys())), ['abx', 'render_profiles', 'testdict', 'testscalar'])
         
         self.assertEqual(sorted(list(A['testdict'].keys())), ['A', 'B', 'C', 'D'])
         self.assertEqual(sorted(list(A['testdict']['A'])), ['item1', 'item2', 'item3', 'item4'])
         
         self.assertDictEqual(A.source, 
-            {'abx':'myproj', 'testdict':'myproj', 'testscalar':'pilot'})
+            {'abx':'myproj', 'render_profiles':'myproj', 'testdict':'myproj', 'testscalar':'pilot'})
         
         self.assertDictEqual(A['testdict'].source, {
             'A':'myproj', 'B':'pilot', 'C':'myproj', 'D':'myproj'})

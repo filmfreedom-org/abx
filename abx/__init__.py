@@ -12,6 +12,8 @@ bl_info = {
     "category": "Object",
     }
 
+
+
 blender_present = False
 try:
     # These are protected so we can read the add-on metadata from my

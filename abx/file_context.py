@@ -35,7 +35,7 @@ from .accumulate import RecursiveDict
 from .enum import Enum
 from .ranks import RankNotFound
 
-from .parsers import NameParsers
+from abx.parsers import NameParsers
 
 
 log_level = Enum('DEBUG', 'INFO', 'WARNING', 'ERROR')
@@ -43,6 +43,8 @@ log_level = Enum('DEBUG', 'INFO', 'WARNING', 'ERROR')
 from .name_schema import FieldSchema
 
 from .name_context import NameContext
+
+#from .render_profile import RenderProfileMap
             
 class FileContext(NameContext):
     """
@@ -244,6 +246,7 @@ class FileContext(NameContext):
         # Defaults
         self.provided_data = RecursiveDict(DEFAULT_YAML, source='default')
         self.abx_fields = DEFAULT_YAML['abx']
+        self.render_profiles = {} #RenderProfileMap()
                      
     def clear_notes(self):
         """
@@ -293,6 +296,9 @@ class FileContext(NameContext):
         self.abx_fields = abx_data            
         # Did we find the YAML data for the project?
         # Did we find the project root?
+        
+        self.render_profiles = self.abx_fields['render_profiles']        
+        #self.render_profiles = RenderProfileMap(self.abx_fields['render_profiles'])
         
         # TODO: Bug?
         # Note that 'project_schema' might not be correct if overrides are given.

@@ -12,6 +12,8 @@ bl_info = {
     "category": "Object",
     }
 
+
+
 blender_present = False
 try:
     # These are protected so we can read the add-on metadata from my
@@ -24,6 +26,8 @@ except ImportError:
     
 if blender_present:    
     from . import abx_ui
+    
+    BlendFile = abx_ui.BlendFile
     
     def register():
         abx_ui.register()

@@ -18,6 +18,8 @@ might forget to set things back up for a final render after I did a previz
 animation.
 """
 
+import os
+
 import bpy
 import bpy, bpy.types, bpy.utils, bpy.props
 
@@ -25,6 +27,32 @@ from abx import ink_paint
 
 from . import file_context
 
+class RenderProfileMap(dict):
+    """
+    Specialized dictionary for mapping Render profile names to profiles.
+    """
+    def __init__(self, profile_map=None):
+        self._blender_enum = []
+        if not profile_map:
+            profile_map = {}
+        for key in profile_map:
+            self[key] = RenderProfile(key, profile_map[key])
+            
+        for key in self.keys():
+            self._blender_enum.append((key, self[key].name, self[key].desc))
+            
+    def keys(self):
+        return sorted(super().keys())
+    
+    def blender_enum(self):
+        return self._blender_enum
+    
+    def apply(self, scene, key):
+        self[key].apply(scene)
+        
+def blender_enum_lookup(self, context):
+    from abx import BlendFile
+    return RenderProfileMap(BlendFile.render_profiles).blender_enum()
 
 class RenderProfile(object):
     """
@@ -34,6 +62,12 @@ class RenderProfile(object):
     loaded from a project YAML file (under the key 'render_profiles').
     
     Attributes:
+        name (str):
+            Drop-down name for profile.
+            
+        desc (str):
+            Longer descriptive name used for tooltips in the UI.
+            
         engine (str):
             Mandatory choice of engine. Some aliases are supported, but the
             standard values are: 'gl', meaning a setup for GL viewport
@@ -148,12 +182,22 @@ class RenderProfile(object):
         }
     
     
-    def __init__(self, fields):
+    def __init__(self, code, fields):
         
         # Note:  Settings w/ value *None* are left unaltered
         #        That is, they remain whatever they were before
         #        If a setting isn't included in the fields, then
         #        the attribute will be *None*.
+        
+        if 'name' in fields:
+            self.name = fields['name']
+        else:
+            self.name = code
+            
+        if 'desc' in fields:
+            self.desc = fields['desc']
+        else:
+            self.desc = code
         
         if 'engine' not in fields:
             fields['engine'] = None
@@ -242,74 +286,17 @@ class RenderProfile(object):
         if self.format:
             # prefix = scene.name_context.render_path
             # prefix = BlendfileContext.name_contexts[scene.name_context].render_path
-            prefix = 'path_to_render'  # We actually need to get this from NameContext
+            
+            prefix = os.path.join(
+                scene.project_properties.render_folder,
+                scene.project_properties.render_prefix)
             if self.suffix:
                 scene.render.filepath = (prefix + '-' + self.suffix + '-' +
                     'f'+('#'*self.framedigits) + '.' +
                     self.render_formats[self.format][1])
+            else:
+                scene.render.filepath = (prefix + '-f'+('#'*self.framedigits) + '.' +
+                    self.render_formats[self.format][1])               
                 
-        
 
-# def set_render_from_profile(scene, profile):
-#     if 'engine' in profile:
-#         if profile['engine'] == 'gl':
-#             pass
-#         elif profile['engine'] == 'bi':
-#             scene.render.engine = 'BLENDER_RENDER'
-#         elif profile['engine'] == 'cycles':
-#             scene.render.engine = 'CYCLES'
-#         elif profile['engine'] == 'bge':
-#             scene.render.engine = 'BLENDER_GAME'
-#
-#     if 'fps' in profile:
-#         scene.render.fps = profile['fps']
-#
-#     if 'fps_skip' in profile:
-#         scene.frame_step = profile['fps_skip']
-#
-#     if 'format' in profile:
-#         scene.render.image_settings.file_format = render_formats[profile['format']][0]
-#
-#     if 'freestyle' in profile:
-#         scene.render.use_freestyle = profile['freestyle']
-#
-#     if 'antialias' in profile:
-#         if profile['antialias']:
-#             scene.render.use_antialiasing = True
-#             if profile['antialias'] in (5,8,11,16):
-#                 scene.render.antialiasing_samples = str(profile['antialias'])
-#         else:
-#             scene.render.use_antialiasing = False
-#
-#     if 'motionblur' in profile:
-#         if profile['motionblur']:
-#             scene.render.use_motion_blur = True
-#             if type(profile['motionblur'])==int:
-#                 scene.render.motion_blur_samples = profile['motionblur']
-#         else:
-#             scene.render.use_motion_blur = False
-#
-#     # Use Lunatics naming scheme for render target:
-#     if 'framedigits' in profile:
-#         framedigits = profile['framedigits']
-#     else:
-#         framedigits = 5
-#
-#     if 'suffix' in profile:
-#         suffix = profile['suffix']
-#     else:
-#         suffix = ''
-#
-#     if 'format' in profile:
-#         rdr_fmt = render_formats[profile['format']][0]
-#         ext = render_formats[profile['format']][1]
-#     else:
-#         rdr_fmt = 'PNG'
-#         ext = 'png'
-#
-#     path = ink_paint.LunaticsShot(scene).render_path(
-#         suffix=suffix, framedigits=framedigits, ext=ext, rdr_fmt=rdr_fmt)
-#
-#     scene.render.filepath = path
-    
         

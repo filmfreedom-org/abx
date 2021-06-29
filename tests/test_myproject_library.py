@@ -27,13 +27,17 @@ class TestLoadingSchemaHierarchies(unittest.TestCase):
     TESTLIBPATH = os.path.join(TESTDATA, 'myproject/Library/' +
                 'models/props/MyProp-By-me_here-prop.blend')
     
-    def test_load_std_schema_from_shotfile(self):
-        # Probably duplicates test_file_context
-        fc = file_context.FileContext(self.TESTPATH)
-        print("\n")
-        print( fc.schemas)    
-        self.assertEqual(fc.schemas,
-            None)
+    def test_not_implemented_yet(self):
+        print("Library schema override not implemented yet")
+        self.assertTrue(True)
+    
+    # def test_load_std_schema_from_shotfile(self):
+    #     # Probably duplicates test_file_context
+    #     fc = file_context.FileContext(self.TESTPATH)
+    #     print("\n")
+    #     print( fc.schemas)    
+    #     self.assertEqual(fc.schemas,
+    #         None)
         
         
         

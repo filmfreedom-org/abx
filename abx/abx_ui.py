@@ -29,21 +29,10 @@ import bpy, bpy.utils, bpy.types, bpy.props
 from bpy.app.handlers import persistent
 
 from . import file_context
-
-# if bpy.data.filepath:
-#     BlendfileContext = file_context.FileContext(bpy.data.filepath)
-# else:
-#     BlendfileContext = file_context.FileContext()
-#
-# abx_data = BlendfileContext.abx_data
-
 from . import copy_anim
-from abx import ink_paint
+from . import ink_paint
 from . import render_profile
 
-#configfile = os.path.join(os.path.dirname(__file__), 'config.yaml')
-
-#print("Configuration file path: ", os.path.abspath(configfile))
 
 # Lunatics Scene Panel
 
@@ -133,94 +122,9 @@ def get_seq_ids(self, context):
     seq_enum_items = [(s, s, seq_id_table[series,episode][s]) for s in seq_ids]
     return seq_enum_items
 
-# Another hard-coded table -- for render profiles
-render_profile_table = {
-    'previz': {
-        'name': 'PreViz',
-        'desc': 'GL/AVI Previz Render for Animatics',
-        'engine':'gl',
-        'version':'any',
-        'fps': 30,
-        'fps_div': 1000,
-        'fps_skip': 1,
-        'suffix': 'GL',
-        'format': 'AVI',
-        'freestyle': False
-        },
-    
-    'paint6': {
-        'name': '6fps Paint',
-        'desc': '6fps Simplified Paint-Only Render',
-        'engine':'bi',
-        'fps': 30,
-        'fps_skip': 5,
-        'suffix': 'P6',
-        'format': 'AVI',
-        'freestyle': False,
-        'antialias': False,
-        'motionblur': False
-        },
-    
-    'paint3': {
-        'name': '3fps Paint',
-        'desc': '3fps Simplified Paint-Only Render',
-        'engine': 'bi',
-        'fps': 30,
-        'fps_skip': 10,
-        'suffix': 'P3',
-        'format': 'AVI',
-        'freestyle': False,
-        'antialias': False,
-        'motionblur': False,
-        },
-    
-    'paint': {
-        'name': '30fps Paint',
-        'desc': '30fps Simplified Paint-Only Render',
-        'engine': 'bi',
-        'fps': 30,
-        'fps_skip': 1,
-        'suffix': 'PT',
-        'format': 'AVI',
-        'freestyle': False,
-        'antialias': False,
-        'motionblur': False
-        },
-    
-    'check': {
-        'name': '1fps Check',
-        'desc': '1fps Full-Features Check Renders',
-        'engine': 'bi',
-        'fps': 30,
-        'fps_skip': 30,
-        'suffix': 'CH',
-        'format': 'JPG',
-        'framedigits': 5,
-        'freestyle': True,
-        'antialias': 8
-        },
-    
-    'full': {
-        'name': '30fps Full',
-        'desc': 'Full Render with all Features Turned On',
-        'engine': 'bi',
-        'fps': 30,
-        'fps_skip': 1,
-        'suffix': '',
-        'format': 'PNG',
-        'framedigits': 5,
-        'freestyle': True,
-        'antialias': 8
-        },
-    }
-
-    
-class LunaticsSceneProperties(bpy.types.PropertyGroup):
+class ProjectProperties(bpy.types.PropertyGroup):
     """
-    Properties of the current scene.
-    
-    NOTE: due to be replaced by 'ProjectProperties', using the schema data
-    retrieved by file_context.
+    Properties of the scene (and file), based on project context information.
     """
     name_context_id = bpy.props.StringProperty(options={'HIDDEN', 'LIBRARY_EDITABLE'})
     
@@ -232,6 +136,101 @@ class LunaticsSceneProperties(bpy.types.PropertyGroup):
             name_context = BlendFile.new_name_context()
             self.name_context_id = str(id(name_context))
             return name_context
+        
+    render_folder = bpy.props.StringProperty(
+        name = 'Render Folder',
+        description = 'Path to the render folder (without filename)',
+        subtype = 'FILE_PATH')
+
+    render_prefix = bpy.props.StringProperty(
+        name = 'Render Prefix',
+        description = 'Prefix used to create filenames used in rendering',
+        subtype = 'FILE_NAME')
+    
+    designation = bpy.props.StringProperty(
+        name = 'Designation',
+        description = 'Short code for this Blender scene only',
+        maxlen=16)
+    
+    role = bpy.props.EnumProperty(
+        name = 'Role',
+        description = 'Role of this scene in project',
+        items = (('cam',     'Camera',       'Camera direction and render to EXR'),
+                 ('compos',  'Compositing',  'Post-compositing from EXR'),
+                 ('anim',    'Animation',    'Character animation scene'),
+                 ('mech',    'Mechanical',   'Mech animation scene'),
+                 ('asset',   'Asset',        'Project model assets'),
+                 ('prop',    'Prop',         'Stage property asset'),
+                 ('char',    'Character',    'Character model asset'),
+                 ('prac',    'Practical',    'Practical property - rigged prop')),
+        default='cam')
+    
+    frame_start = bpy.props.IntProperty(
+        name = 'Start',
+        description = "Start frame of shot (used to set the render start frame)",
+        soft_min = 0, soft_max=10000)
+    
+    frame_end = bpy.props.IntProperty(
+        name = 'End',
+        description = "End frame of shot (used to set the render end frame)",
+        soft_min = 0, soft_max=10000)
+    
+    frame_rate = bpy.props.IntProperty(
+        default = 30,
+        name = 'FPS',
+        description = "Frame rate for shot",
+        soft_max = 30,
+        min = 1, max = 120)
+    
+    ink = bpy.props.EnumProperty(
+        items = (('FS', 'Freestyle', 'Uses Freestyle Ink'),
+                 ('EN', 'Edge Node', 'Uses EdgeNode for Ink'),
+                 ('FE', 'FS + EN',   'Uses both Freestyle & EdgeNode for Ink'),
+                 ('NI', 'No Ink',    'Does not use ink (paint render used for final)'),
+                 ('CU', 'Custom',    'Custom setup, do not touch ink settings')),
+        default = 'CU',
+        name = 'Ink Type',
+        description = "Determines how ink will be handled in final shot render")
+    
+class ProjectPanel(bpy.types.Panel):
+    """
+    Add a panel to the Properties-Scene screen with Project Settings.
+    """
+    bl_idname = 'SCENE_PT_project'
+    bl_label = 'Project Properties'
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = 'scene'
+    
+    def draw(self, context):
+        pp = bpy.context.scene.project_properties
+        self.layout.label(text='Project Properties')
+        row = self.layout.row()
+        row.prop(pp, 'render_folder')
+        row = self.layout.row()
+        row.prop(pp, 'render_prefix')   
+        row.prop(pp, 'designation')     
+        self.layout.label(text='Render Range')
+        row = self.layout.row()
+        row.prop(pp, 'frame_start')        
+        row.prop(pp, 'frame_end')    
+        row.prop(pp, 'frame_rate')
+        self.layout.label(text='Extra')
+        row = self.layout.row()
+        row.prop(pp, 'role')
+        row.prop(pp, 'ink')
+
+# Buttons
+
+   
+    
+class LunaticsSceneProperties(bpy.types.PropertyGroup):
+    """
+    Properties of the current scene.
+    
+    NOTE: due to be replaced by 'ProjectProperties', using the schema data
+    retrieved by file_context.
+    """
     
     series_id = bpy.props.EnumProperty(
         items=[
@@ -331,21 +330,7 @@ class LunaticsScenePanel(bpy.types.Panel):
 
 # Buttons
 
-class RenderProfileSettings(bpy.types.PropertyGroup):
-    """
-    Settings for Render Profiles control.
-    
-    NOTE: currently (0.2.6) uses hard-coded values. Planned to
-    switch to project-defined values.
-    """    
-    render_profile = bpy.props.EnumProperty(
-        name='Profile',
-        items=[(k, v['name'], v['desc'])
-                            for k,v in render_profile_table.items()],
-        description="Select from pre-defined profiles of render settings",
-        default='full')
-    
-
+   
 
 class RenderProfilesOperator(bpy.types.Operator):
     """
@@ -357,9 +342,9 @@ class RenderProfilesOperator(bpy.types.Operator):
     
     def invoke(self, context, event):
         scene = context.scene
-        profile = render_profile_table[scene.render_profile_settings.render_profile]
+        profile = scene.render_profile_settings.render_profile
         
-        render_profile.set_render_from_profile(scene, profile)
+        BlendFile.render_profiles.apply(scene, profile)
         
         return {'FINISHED'}
 
@@ -525,13 +510,7 @@ class lunatics_compositing(bpy.types.Operator):
         shot.cfg_scene()
         
         return {'FINISHED'}
-    
-#     def draw(self, context):
-#         settings = context.scene.lx_compos_settings
-#         self.col = self.layout.col()
-#         col.prop(settings, "inkthru", text="Ink Thru")
-#         col.prop(settings, "billboards", text="Ink Thru")
-      
+     
 
          
 class LunaticsPanel(bpy.types.Panel):
@@ -555,7 +534,17 @@ class LunaticsPanel(bpy.types.Panel):
         
         
 BlendFile = file_context.FileContext()
-        
+
+class RenderProfileSettings(bpy.types.PropertyGroup):
+    """
+    Settings for Render Profiles control.
+    """    
+    render_profile = bpy.props.EnumProperty(
+          name='Profile',
+          items=render_profile.blender_enum_lookup,
+          description="Select from render profiles defined in project")        
+    
+    
 @persistent
 def update_handler(ctxt):
     """
@@ -568,6 +557,10 @@ def register():
     bpy.utils.register_class(LunaticsSceneProperties)
     bpy.types.Scene.lunaprops = bpy.props.PointerProperty(type=LunaticsSceneProperties)    
     bpy.utils.register_class(LunaticsScenePanel)
+    
+    bpy.utils.register_class(ProjectProperties)
+    bpy.types.Scene.project_properties = bpy.props.PointerProperty(type=ProjectProperties)  
+    bpy.utils.register_class(ProjectPanel)
     
     bpy.utils.register_class(RenderProfileSettings)
     bpy.types.Scene.render_profile_settings = bpy.props.PointerProperty(
@@ -592,6 +585,8 @@ def register():
 def unregister():
     bpy.utils.unregister_class(LunaticsSceneProperties)
     bpy.utils.unregister_class(LunaticsScenePanel)
+    
+    bpy.utils.unregister_class(ProjectProperties)
     
     bpy.utils.unregister_class(RenderProfileSettings)
     bpy.utils.unregister_class(RenderProfilesOperator)

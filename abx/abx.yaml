@@ -58,7 +58,7 @@ definitions:
 abx:
     render_profiles:
         previz:
-            name: PreViz,
+            name: PreViz
             desc: 'GL/AVI Previz Render for Animatics'
             engine: gl
             version: any
@@ -66,7 +66,7 @@ abx:
             fps_div: 1000
             fps_skip: 1
             suffix: GL
-            format: AVI_JPEG
+            format: AVI
             extension: avi
             freestyle: False
             
@@ -77,7 +77,7 @@ abx:
             fps: 30
             fps_skip: 3
             suffix: PT
-            format: AVI_JPEG
+            format: AVI
             extension: avi
             freestyle: False,
             antialias: False,
@@ -90,7 +90,7 @@ abx:
             fps: 30
             fps_skip: 30
             suffix: CH
-            format: JPEG
+            format: JPG
             extension: jpg
             framedigits: 5
             freestyle: True

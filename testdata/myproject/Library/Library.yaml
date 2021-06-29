@@ -12,19 +12,19 @@ project_schema:
       
     - rank: dept
       type:
-        graphics: Graphic Art (2D)
-        models: Models (3D)
+        graphics: 'Graphic Art (2D)'
+        models: 'Models (3D)'
         sound: Sound Effects 
         music: Music and Cues
         voice: Voice Lines
         stock: Assembled Stock Footage Elements
      
-     - rank: category
-       type: string
-       maxlength: 32
+    - rank: category
+      type: string
+      maxlength: 32
        
-     - rank: subcat
-       type: string
-       maxlength: 32
+    - rank: subcat
+      type: string
+      maxlength: 32
        
  

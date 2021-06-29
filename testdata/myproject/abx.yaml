@@ -23,4 +23,59 @@ testdict:
           b: 2
         - a: 2
           b: 3
+          
+render_profiles:
+        previz:
+            name: PreViz
+            desc: 'GL/AVI Previz Render for Animatics'
+            engine: gl
+            version: any
+            fps: 24
+            fps_skip: 1
+            suffix: GL
+            format: AVI
+            extension: avi
+            freestyle: False
+            
+        quick:
+            name: 3fps Paint
+            desc: '24fps Simplified Paint-Only Render'
+            engine: bi
+            fps: 24
+            fps_skip: 8
+            suffix: PT
+            format: AVI
+            extension: avi
+            freestyle: False,
+            antialias: False,
+            motionblur: False
+                
+        check:
+            name: 1fps Check
+            desc: '1fps Full-Features Check Renders'
+            engine: bi
+            fps: 24
+            fps_skip: 24
+            suffix: CH
+            format: JPG
+            extension: jpg
+            framedigits: 5
+            freestyle: True
+            antialias: 8
+                
+        full:
+            name: 24fps Full
+            desc: 'Full Render with all Features Turned On'
+            engine: bi
+            fps: 24
+            fps_skip: 1
+            suffix: ''
+            format: PNG
+            extension: png
+            framedigits: 5
+            freestyle: True
+            antialias: 8
+            motionblur: 2
+            rendersize: 100
+            compress: 50    
    

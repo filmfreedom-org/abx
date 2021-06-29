@@ -51,7 +51,7 @@ class TestRenderProfile_Implementation(unittest.TestCase):
         self.assertIn('render_profiles', self.fc1.abx_fields)
         
     def test_abx_data_default_full_profile_correct(self):
-        FullProfile = render_profile.RenderProfile(
+        FullProfile = render_profile.RenderProfile('full',
                         self.fc0.abx_fields['render_profiles']['full'])
         FullProfile.apply(self.scene)
         
