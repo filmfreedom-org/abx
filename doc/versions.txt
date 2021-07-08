@@ -54,59 +54,48 @@ number, with the following meanings:
 		  	  the full PNG renders, which are done last -- but this could be a problem
 		  	  if I tried to regenerate the previz later)
 	
+0.2.6a (2021-06):
+	* Default behavior from YAML files.
+	
+	* Attempts to automate file and scene naming.
+	
+	* Render Profiles basically works, and uses defaults set in the project's
+	  abx.yaml file(s).
+	
+	This is the last version with the full file_context system, and I never really
+	got it to work right. So, I decided to move on without it.
 	
 		  	  
-ROADMAP (for 2021?):
-
-0.2.6 (2021-05):
-	The first attempt to incorporate YAML configuration into the program.
-	
-	* Introduce better fallback behavior when project YAML files aren't found,
-	  and give informative messages to the user about them.
-	  
-	* Move program defaults into abx.yaml and project.yaml files in the ABX
-	  source code. Load these before project files to guarantee default requirements
-	  are met.
-	
-	* Use abx.yaml 'render_profiles' block to set options for render_profiles
+CURRENT DEV:
 	
 0.2.7:
-	Replace "Lunatics! Properties" with "Project Properties" (the project name will
-	be one of the properties, and probably read-only). Parse the "role" field.
-	Generate read-only data from file_context and appropriate data-type fields
-	for unspecified ranks.
+	After another review, I decided to eliminate file_context and related modules
+	from ABX, replacing them with a much simpler "abx_context" module that just
+	updates from the filepath and gets the relevant 'abx.yaml' files from the project
+	directories, using "accumulate" (which is still present).
+	
+	I never got the ranks/branches system working as planned, and it's increasingly clear
+	that this code is more appropriate to use with KitCAT. It has unnecessary features to
+	support non-Blender files, and it's possible for it to mess things up or break, if the
+	project context is unexpected.
+	
+	Project Properties will exist, but will be a very simple naming utility, with the
+	various names we need implemented simply as Blender scene properties.
+	
+	Lunatics Properties will be removed after moving dependencies in Ink/Paint to the
+	new system.
+	
+	
+ROADMAP (for 2021?):
+	
 	
 0.2.8:
-	Fix the schema override issue to allow for use with library assets or other
-	hierarchy besides episodes. Improve the handling of "rank" (possibly refactor
-	the code to make rank-handling more intuitive?)
+	?
 	
 0.2.9:
-	Write / save / update to filepath to allow changing the name based on the
-	input from the Project Properties (Not 100% sure I want this).
+	?
 	
 0.3.0:
-	0.3.0 should have full data support driving the program features.
-	
-0.3.1:
-	Pop-up report generation? I had this working experimentally, years ago, and
-	it'd be useful to generate pop-up reports for some of the introspection
-	features I want to add.
-	
-0.3.x:
-	Improvements to data system and other capabilities.
-	
-	* Name context by group, rather than scene? Would be handy for library assets.
-	
-	* Possible integration with KitCAT? There's significant overlap between ABX
-	  and KitCAT and I already call the metadata files "kitcat" data in the sources.
-	  Will they be merely interoperable, or should I actually make ABX into the KitCAT
-	  plugin for Blender?
-	  
-	* Port ABX to Blender 2.8+, keeping 2.7 support, if possible. If I'm really
-	  going to use 2.8 for compositing, I will need this.
-	
-0.4.x (hopefully during 2021, because these would be very useful to have!):
 	New features. Hopefully:
 	
 		* Recognize/use "role" field.
@@ -117,17 +106,34 @@ ROADMAP (for 2021?):
 		* Insert characters into an animation file
 		* Find/report broken dupligroups and/or animation proxies
 		* Generate linking report(s) -- information to support correct
-		  linking diagrams, or possibly source for auto-generating them?
+		  linking diagrams, or possibly source for auto-generating them?	
 	
-0.5.x:
+0.3.1:
+	Pop-up report generation? I had this working experimentally, years ago, and
+	it'd be useful to generate pop-up reports for some of the introspection
+	features I want to add.
+	
+0.3.x:
+	Improvements to data system and other capabilities.
+	
+	* Possible integration with KitCAT? There's significant overlap between ABX
+	  and KitCAT and I already call the metadata files "kitcat" data in the sources.
+	  Will they be merely interoperable, or should I actually make ABX into the KitCAT
+	  plugin for Blender?
+	  
+	* Port ABX to Blender 2.8+, keeping 2.7 support, if possible. If I'm really
+	  going to use 2.8 for compositing, I will need this.
+	
+0.4.x & beyond:
+	Version with fairly-complete Blender 2.7 & 2.8 support & integration with KitCAT.
+	
+	Might consider adding support for MoCap and Digital Puppetry tools?
+	
+	Possibly add tools for "machinima workflow" with UPBGE or Godot platforms.
+	
 	Integration with Papagayo / Lipsync data for animation?
 	Maybe find the appropriate data files and run the lipsync importer on them?
 	Or perhaps incorporate the lipsync importer code?
-	
-
-0.6.x:
-	Automated management of credits & licensing? (Or does this all fall under
-	the heading of KitCAT?)
 	
 
 	
