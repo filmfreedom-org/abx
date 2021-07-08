@@ -28,7 +28,7 @@ import os
 import bpy, bpy.utils, bpy.types, bpy.props
 from bpy.app.handlers import persistent
 
-from . import file_context
+from . import abx_context
 from . import copy_anim
 from . import ink_paint
 from . import render_profile
@@ -124,18 +124,18 @@ def get_seq_ids(self, context):
 
 class ProjectProperties(bpy.types.PropertyGroup):
     """
-    Properties of the scene (and file), based on project context information.
+    Properties of the scene (and file), used for naming.
     """
-    name_context_id = bpy.props.StringProperty(options={'HIDDEN', 'LIBRARY_EDITABLE'})
-    
-    @property
-    def name_context(self):
-        if self.name_context_id in BlendFile.name_contexts:
-            return BlendFile.name_contexts[self.name_context_id]
-        else:
-            name_context = BlendFile.new_name_context()
-            self.name_context_id = str(id(name_context))
-            return name_context
+    # name_context_id = bpy.props.StringProperty(options={'HIDDEN', 'LIBRARY_EDITABLE'})
+    #
+    # @property
+    # def name_context(self):
+    #     if self.name_context_id in BlendFile.name_contexts:
+    #         return BlendFile.name_contexts[self.name_context_id]
+    #     else:
+    #         name_context = BlendFile.new_name_context()
+    #         self.name_context_id = str(id(name_context))
+    #         return name_context
         
     render_folder = bpy.props.StringProperty(
         name = 'Render Folder',
@@ -367,16 +367,29 @@ class RenderProfilesPanel(bpy.types.Panel):
         row = self.layout.row()
         row.operator('render.render_profiles')
         
-
+class reset_rigify_after_scale(bpy.types.Operator):
+    """
+    Fix selected Rigify-type Rig after scaling.
+    
+    Resets the "STRETCH TO" constraints on a Rigify rig after they've been
+    disturbed by rescaling
+    """
+    bl_idname = 'object.reset_scaled_rigify'
+    bl_label = "Reset Rigify"
+    bl_options = {'UNDO'}
+    
+    def invoke(self, context, event):
+        tgt_obs = [ob for ob in context.selected_objects if ob.type == 'ARMATURE']
+        for ob in tgt_obs:
+            copy_anim.reset_armature_stretch_constraints(ob)
+        return {'FINISHED'}
+    
 
 class copy_animation(bpy.types.Operator):
     """
     Copy animation from active object to selected objects (select source last!).
     
-    Useful for fixing broken proxy rigs (create a new proxy, and used this tool
-    to copy all animation from the original -- avoids tedious/error-prone NLA work).
-    
-    Can also migrate to a re-scaled rig.
+    Useful for fixing broken proxy rigs. Can also re-scale
     """
     bl_idname = 'object.copy_anim'
     bl_label  = 'Copy Animation'
@@ -441,7 +454,6 @@ class copy_animation_settings(bpy.types.PropertyGroup):
         default = 1.0)
     
 
-
 class CharacterPanel(bpy.types.Panel):
     """
     Features for working with characters and armatures.
@@ -463,9 +475,10 @@ class CharacterPanel(bpy.types.Panel):
         layout.prop(settings, 'nla')
         layout.prop(settings, 'rescale')
         layout.prop(settings, 'scale_factor')
+        layout.separator()
+        layout.operator('object.reset_scaled_rigify')
         
 
-         
     
 class lunatics_compositing_settings(bpy.types.PropertyGroup):
     """
@@ -533,7 +546,7 @@ class LunaticsPanel(bpy.types.Panel):
         layout.prop(settings, 'sepsky', text="Separate Sky")
         
         
-BlendFile = file_context.FileContext()
+BlendFile = abx_context.ABX_Context()
 
 class RenderProfileSettings(bpy.types.PropertyGroup):
     """
@@ -548,7 +561,7 @@ class RenderProfileSettings(bpy.types.PropertyGroup):
 @persistent
 def update_handler(ctxt):
     """
-    Keeps FileContext up-to-date with Blender file loaded.
+    Keeps ABX_Context up-to-date with Blender file loaded.
     """
     BlendFile.update(bpy.data.filepath)
      
@@ -567,6 +580,8 @@ def register():
         type=RenderProfileSettings)
     bpy.utils.register_class(RenderProfilesOperator)
     bpy.utils.register_class(RenderProfilesPanel)  
+    
+    bpy.utils.register_class(reset_rigify_after_scale)
         
     bpy.utils.register_class(copy_animation)
     bpy.utils.register_class(copy_animation_settings)
@@ -583,6 +598,10 @@ def register():
     bpy.app.handlers.scene_update_post.append(update_handler)
     
 def unregister():
+    bpy.app.handlers.save_post.remove(update_handler)
+    bpy.app.handlers.load_post.remove(update_handler)
+    bpy.app.handlers.scene_update_post.remove(update_handler)
+    
     bpy.utils.unregister_class(LunaticsSceneProperties)
     bpy.utils.unregister_class(LunaticsScenePanel)
     
@@ -591,6 +610,8 @@ def unregister():
     bpy.utils.unregister_class(RenderProfileSettings)
     bpy.utils.unregister_class(RenderProfilesOperator)
     bpy.utils.unregister_class(RenderProfilesPanel)  
+    
+    bpy.utils.unregister_class(reset_rigify_after_scale)
         
     bpy.utils.unregister_class(copy_animation)
     bpy.utils.unregister_class(copy_animation_settings)
@@ -598,4 +619,6 @@ def unregister():
     
     bpy.utils.unregister_class(lunatics_compositing_settings)
     bpy.utils.unregister_class(lunatics_compositing)
-    bpy.utils.unregister_class(LunaticsPanel)  
+    bpy.utils.unregister_class(LunaticsPanel)
+    
+      

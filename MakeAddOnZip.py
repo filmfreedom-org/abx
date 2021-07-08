@@ -9,8 +9,8 @@ import subprocess, os
 
 import abx
 
-VERSION_PKG = ('a',)
-VERSION = abx.bl_info['version'] + VERSION_PKG
+#VERSION_PKG = ('a',)
+VERSION = abx.bl_info['version'] + (abx.version_ext,)
 
 #VERSION = (0,1,2,'a')
 

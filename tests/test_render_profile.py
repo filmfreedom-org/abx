@@ -19,7 +19,7 @@ sys.path.append(os.path.normpath(os.path.join(__file__, '..', '..')))
 import bpy
 
 import abx
-from abx import file_context
+from abx import abx_context
 from abx import render_profile
 
 class TestRenderProfile_Utils(unittest.TestCase):
@@ -35,8 +35,8 @@ class TestRenderProfile_Implementation(unittest.TestCase):
     
     
     def setUp(self):
-        self.fc0 = file_context.FileContext(bpy.data.filepath)
-        self.fc1 = file_context.FileContext(self.TESTPATH)
+        self.fc0 = abx_context.ABX_Context(bpy.data.filepath)
+        self.fc1 = abx_context.ABX_Context(self.TESTPATH)
         self.scene = bpy.context.scene
             
     def test_blendfile_context(self):

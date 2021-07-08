@@ -25,7 +25,7 @@ import bpy, bpy.types, bpy.utils, bpy.props
 
 from abx import ink_paint
 
-from . import file_context
+from . import abx_context
 
 class RenderProfileMap(dict):
     """
